@@ -17,7 +17,7 @@ export const read = async () => {
   }
 };
 
-export const createUser = async (evt: H3Event) => {
+export const create = async (evt: H3Event) => {
   try {
     // 讀取請求 Body
     const body = await readBody(evt);
@@ -31,15 +31,11 @@ export const createUser = async (evt: H3Event) => {
     }
 
     // 插入資料到 users 表
-    const result = await usersModel.createUser({
+    const result = await usersModel.create({
       id: body.id,
       full_name: body.full_name,
-      password: body.password|| null,
       created_at: new Date(), // 自動填入當前時間
-      LineID: body.LineID || null,
-      email: body.email || null,
       birthday: body.birthday || null,
-      account_name: body.account_name || null
     });
 
     return {
@@ -74,17 +70,13 @@ export const detail = async (evt: H3Event) => {
 export const update = async (evt: H3Event) => {
   try {
     const body = await readBody(evt);
-    const id = evt.context.params?.id || body.id; // 从路径参数或请求体获取 id
-
-    if (!id) {
+    if (!body.id) {
       throw createError({ statusCode: 400, statusMessage: 'Missing user ID' });
     }
 
-    const result = await usersModel.update(id, {
+    const result = await usersModel.update(body.id, {
       full_name: body.full_name,
-      email: body.email,
       birthday: body.birthday,
-      account_name: body.account_name
     });
 
     return {
@@ -102,7 +94,9 @@ export const update = async (evt: H3Event) => {
 export const remove = async (evt: H3Event) => {
   try {
     // 从路径参数中获取用户 ID
-    const id = evt.context.params?.id;
+    const body = await readBody(evt);
+
+    const id = body.id;
 
     if (!id) {
       throw createError({

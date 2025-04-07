@@ -19,31 +19,23 @@ export const read = async () => {
   return result as Users[];
 };
 
-export const createUser = async (data: Users) => {
+export const create = async (data: Users) => {
   const result = (await sql({
     query: `
       INSERT IGNORE INTO users (
         id,
         full_name,
-        password,
         created_at,
-        LineID,
-        email,
-        birthday,
-        account_name
+        birthday
       ) VALUES (
-       ?, ?, ?, ?, ?, ?, ?, ?
+       ?, ?, ?, ?
       )
     `,
     values: [
       data.id,
       data.full_name,
-      data.password?? null,
       data.created_at,
-      data.LineID?? null,
-      data.email ?? null, 
       data.birthday?? null,
-      data.account_name ?? null 
     ]
   })) as any;
 
@@ -68,15 +60,14 @@ export const update = async (id: string, data: Partial<Users>) => {
       UPDATE users
       SET
         full_name = ?,
-        email = ?,
-        birthday = ?,
-        account_name = ?
+        birthday = ?
       WHERE id = ?
     `,
-    values: [data.full_name, data.email, data.birthday, data.account_name, id]
+    values: [data.full_name, data.birthday, id]
   });
 
   return await detail(id);
+  
 };
 
 

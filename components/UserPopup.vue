@@ -4,34 +4,39 @@
       <h2 class="text-xl font-bold mb-4 text-center">
         {{ isEdit ? '編輯用戶' : '新增用戶' }}
       </h2>
-
-      <div v-if="isEdit" class="mb-4 text-blue-500 font-medium">
-        編輯模式：你正在修改用戶資料
+      <div class="mb-4">
+        <div class="mb-1 text-sm text-gray-700">用戶編號：</div>
+        <div v-if="isEdit" class="w-full border px-3 py-2 rounded bg-gray-100">
+          {{ form.userId }}
+        </div>
+        
+        <!-- 新增模式：輸入框 -->
+        <input
+          v-else
+          v-model="form.userId"
+          type="number"
+          class="w-full border px-3 py-2 rounded"
+        />
       </div>
 
       <div class="mb-4">
-        <div class="mb-1 text-sm text-gray-700">用戶編號</div>
-        <input v-model="form.userId" type="text" class="w-full border px-3 py-2 rounded" />
-      </div>
-
-      <div class="mb-4">
-        <div class="mb-1 text-sm text-gray-700">LINE名字</div>
+        <div class="mb-1 text-sm text-gray-700">LINE名字：</div>
         <input v-model="form.lineName" type="text" class="w-full border px-3 py-2 rounded" />
       </div>
 
-      <div class="mb-4">
-        <div class="mb-1 text-sm text-gray-700">加入時間</div>
-        <input v-model="form.joinDate" type="date" class="w-full border px-3 py-2 rounded" />
-      </div>
+      
 
-      <div class="mb-4">
-        <div class="mb-1 text-sm text-gray-700">生日</div>
-        <input v-model="form.birthday" type="date" class="w-full border px-3 py-2 rounded" />
+      <div class="mb-4 flex items-center">
+        <div class="mb-1 text-sm text-gray-700 pr-6">生日：</div>
+        <a-config-provider :locale="zhTW">
+        <a-date-picker
+          v-model:value="form.birthday"/>
+        </a-config-provider>
       </div>
 
       <div class="flex justify-end space-x-2">
         <button @click="$emit('update:modelValue', false)" class="px-4 py-2 bg-gray-300 rounded">取消</button>
-        <button @click="submit" class="px-4 py-2 bg-green-500 text-white rounded">
+        <button @click="submit" class="px-4 py-2 bg-amber-500 text-white rounded">
           {{ isEdit ? '更新' : '提交' }}
         </button>
       </div>
@@ -40,6 +45,12 @@
 </template>
   
 <script setup lang="ts">
+import zhTW from 'ant-design-vue/es/locale/zh_TW';
+import 'dayjs/locale/zh-tw';
+import dayjs from 'dayjs'
+import type { Dayjs } from 'dayjs'
+import { reactive, watch } from 'vue'
+
 const props = defineProps<{
   modelValue: boolean
   isEdit?: boolean  
@@ -47,17 +58,82 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue', 'submit'])
 
-const form = ref({
+// 使用 reactive 来定义 form
+const form = reactive({
   userId: '',
   lineName: '',
-  joinDate: '',
-  birthday: ''
-})
+  birthday: undefined as Dayjs | undefined
+});
 
-const submit = () => {
-  emit('submit', form.value)
-  emit('update:modelValue', false)
-}
+const setFormData = (data: any) => {
+  console.log('Incoming data:', data)
+  form.userId = data.id ?? '';
+  form.lineName = data.full_name ?? '';
+  form.birthday = data.birthday ? dayjs(data.birthday) : undefined; // 如果没有日期，使用 undefined
+};
 
+watch(() => props.modelValue, (visible) => {
+  if (visible && !props.isEdit) {
+    resetForm()
+  }
+});
 
+const resetForm = () => {
+  form.userId = '';
+  form.lineName = '';
+  form.birthday = undefined;
+};
+
+const submit = async () => {
+  try {
+    if (props.isEdit) {
+      // 如果是编辑模式，则调用更新 API
+      await updateUser();
+      console.log("userId", form.userId);
+    } else {
+      // 如果是创建模式，则调用创建 API
+      await createUser();
+      console.log("userId", form.userId);
+    }
+    // 提交后关闭弹窗
+    emit('update:modelValue', false);
+  } catch (error) {
+    console.error('Error submitting form:', error);
+  }
+};
+
+const updateUser = async () => {
+  try {
+    await $fetch('/api/EditUser', {
+      method: 'PUT',
+      body: form 
+    });
+  } catch {
+    alert('Edit blog error');
+    console.log("form", form);
+  }
+};
+
+const createUser = async () => {
+  try {
+    const response = await $fetch('/api/POSTUser', {
+      method: 'POST',
+      body: form 
+    });
+    if (response) {
+      alert("添加成功")
+    } else {
+      alert("Post Failed: No valid response");
+    }
+  } catch (error) {
+    console.error("PostData 失败:", error);
+    alert("提交失败");
+    console.log("form", form); 
+  }
+};
+
+defineExpose({
+  setFormData
+});
 </script>
+

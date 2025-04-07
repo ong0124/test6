@@ -28,8 +28,9 @@ router.get('/GETallOrders', defineEventHandler(BookingCtrl.checkOrders));
 
 router.get('/GETDetailUsers/:id', defineEventHandler(usersCtrl.detail));
 router.get('/GetUser', defineEventHandler(usersCtrl.read));
-router.put('/EditUser/:id', defineEventHandler(usersCtrl.update));
-router.delete('/DeleteUser/:id', defineEventHandler(usersCtrl.remove));
+router.put('/EditUser', defineEventHandler(usersCtrl.update));
+router.delete('/DeleteUser', defineEventHandler(usersCtrl.remove));
+router.post('/POSTUser', defineEventHandler(usersCtrl.create));
 
 router.get('/GETallOffdays',defineEventHandler(offDaysCtrl.read));
 router.post('/CreateOffDays',defineEventHandler(offDaysCtrl.createOffDays));
