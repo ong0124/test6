@@ -47,7 +47,7 @@
       </div>
     </div>
     </div>
-    <UserPopup ref="popupRef" v-model="showPopup" :isEdit="isEdit" @submit="handleSubmit" />
+    <UserPopup ref="popupRef" v-model="showPopup" :isEdit="isEdit" @submit="handleSubmit" @submitted="fetchData"/>
     <div>
         <BottomNavigator/>
     </div>
@@ -95,7 +95,6 @@ const handleItemSelected = (action: string,user?: any) => {
   currentAction.value = action;
   selectedUser.value = user ?? null;
 
-  console.log('當前選中的使用者:', selectedUser.value);
   if (action === 'edit') {
     showExtendColumn.value = true;
 
@@ -135,7 +134,6 @@ const IconHandle = async (item: any) => {
     nextTick(() => {
       popupRef.value?.setFormData(item);
     });
-    fetchData();
   } else if (currentAction.value === 'delete') {
     try {
       const response = await $fetch('/api/DeleteUser', {

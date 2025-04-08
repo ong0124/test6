@@ -7,13 +7,13 @@
       <div class="mb-4">
         <div class="mb-1 text-sm text-gray-700">用戶編號：</div>
         <div v-if="isEdit" class="w-full border px-3 py-2 rounded bg-gray-100">
-          {{ form.userId }}
+          {{ form.id }}
         </div>
         
         <!-- 新增模式：輸入框 -->
         <input
           v-else
-          v-model="form.userId"
+          v-model="form.id"
           type="number"
           class="w-full border px-3 py-2 rounded"
         />
@@ -56,18 +56,17 @@ const props = defineProps<{
   isEdit?: boolean  
 }>()
 
-const emit = defineEmits(['update:modelValue', 'submit'])
+const emit = defineEmits(['update:modelValue', 'submit', 'submitted'])
 
-// 使用 reactive 来定义 form
 const form = reactive({
-  userId: '',
+  id: '',
   lineName: '',
   birthday: undefined as Dayjs | undefined
 });
 
 const setFormData = (data: any) => {
   console.log('Incoming data:', data)
-  form.userId = data.id ?? '';
+  form.id = data.id ?? '';
   form.lineName = data.full_name ?? '';
   form.birthday = data.birthday ? dayjs(data.birthday) : undefined; // 如果没有日期，使用 undefined
 };
@@ -79,7 +78,7 @@ watch(() => props.modelValue, (visible) => {
 });
 
 const resetForm = () => {
-  form.userId = '';
+  form.id = '';
   form.lineName = '';
   form.birthday = undefined;
 };
@@ -89,14 +88,15 @@ const submit = async () => {
     if (props.isEdit) {
       // 如果是编辑模式，则调用更新 API
       await updateUser();
-      console.log("userId", form.userId);
+      console.log("id", form.id);
     } else {
       // 如果是创建模式，则调用创建 API
       await createUser();
-      console.log("userId", form.userId);
+      console.log("id", form.id);
     }
     // 提交后关闭弹窗
     emit('update:modelValue', false);
+    emit('submitted');  
   } catch (error) {
     console.error('Error submitting form:', error);
   }
@@ -106,7 +106,11 @@ const updateUser = async () => {
   try {
     await $fetch('/api/EditUser', {
       method: 'PUT',
-      body: form 
+      body: { 
+        id:form.id,
+        full_name:form.lineName, 
+        birthday: form.birthday ? dayjs(form.birthday).format('YYYY-MM-DD') : null
+      }
     });
   } catch {
     alert('Edit blog error');
@@ -118,7 +122,11 @@ const createUser = async () => {
   try {
     const response = await $fetch('/api/POSTUser', {
       method: 'POST',
-      body: form 
+      body: { 
+        id:form.id,
+        full_name:form.lineName, 
+        birthday: form.birthday ? dayjs(form.birthday).format('YYYY-MM-DD') : null
+      } 
     });
     if (response) {
       alert("添加成功")
