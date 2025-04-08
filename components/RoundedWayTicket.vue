@@ -572,10 +572,7 @@ const userStore = useUserStore();
       if (!isChecked.value) {
         openNotification('bottom'); // 如果未勾選，彈出通知
       } else {
-        let user_id = userStore.user_id;
-        if(!user_id){
-          await userStore.loginWithLINE();
-        }
+        const user_id = 8;
         const form = {
           trip_type: tab.value,
           user_id: 7,
@@ -607,15 +604,7 @@ const userStore = useUserStore();
           });
           console.log(response);
           if (response?.id) {
-            const bookingId =  response.id[0].id;
-           console.log("id check2:" + bookingId);
-          const path = localPath('/confirmationPage/' + bookingId);  
-          navigateTo({
-            path,
-            query: {
-              isSwapped: String(isSwapped.value),
-              },
-          });
+            navigateTo(localPath('/'));
         }
       }
         catch{

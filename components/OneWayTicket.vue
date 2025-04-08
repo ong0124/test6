@@ -377,11 +377,11 @@ import enUS from 'ant-design-vue/es/locale/en_US';
       if (!isChecked.value) {
         openNotification('bottom'); // 如果未勾選，彈出通知
       } else {
-        let user_id = userStore.user_id;
-        if(!user_id){
-          await userStore.loginWithLINE();
-        }
-
+        // let user_id = userStore.user_id;
+        // if(!user_id){
+        //   await userStore.loginWithLINE();
+        // }
+        const user_id = 8;
         const form = {
           trip_type: tab.value,
           user_id: user_id,
@@ -412,14 +412,7 @@ import enUS from 'ant-design-vue/es/locale/en_US';
             body: form
           });
           if (response?.id) {
-          const bookingId =  response.id[0].id;
-          const path = localPath('/confirmationPage/' + bookingId);
-             navigateTo({
-             path,
-             query: {
-               isSwapped: String(isSwapped.value),
-             },
-          });
+          navigateTo(localPath('/'));
           }
         }catch{
           alert(t('alertMessage4'));
