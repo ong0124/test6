@@ -3,7 +3,6 @@
     <Header />
   </div>
   <div>
-
     <div class="flex justify-evenly items-center">
         <div class="flex items-center border-2 border-blue-500 rounded-md w-2/3 my-2 ml-4">
               <Icon name="material-symbols-search-rounded" class="h-5 w-5 text-gray-500 mx-2 " /></input>
