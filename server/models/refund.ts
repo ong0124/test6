@@ -3,7 +3,7 @@ import { sql } from "../db/db";
 export type RefundModel = {
     id: number;
     booking_id: number;
-    user_id: number;
+    LineID: string;
     status: string;
     refund_amount: number;
     reason?: string;
@@ -22,7 +22,7 @@ export const readAll = async () =>{
         SELECT 
             r.id,
             r.booking_id,
-            r.user_id,
+            r.LineID,
             r.status,
             r.refund_amount,
             r.created_at,
@@ -34,7 +34,7 @@ export const readAll = async () =>{
         FROM 
             refund_apply r
         JOIN 
-            users u ON r.user_id = u.id
+            users u ON r.LineID = u.LineID
         JOIN 
             booking b ON r.booking_id = b.id
     `
@@ -48,7 +48,7 @@ export const create = async (data: Pick<RefundModel,Exclude<keyof RefundModel, '
     query: `
       INSERT INTO refund_apply (
         booking_id,
-        user_id,
+        LineID,
         created_at
       ) VALUES (
         ?,
@@ -56,7 +56,7 @@ export const create = async (data: Pick<RefundModel,Exclude<keyof RefundModel, '
         ?
       ) 
     `,
-    values: [data.booking_id, data.user_id,data.created_at,]
+    values: [data.booking_id, data.LineID,data.created_at,]
   })) as any;
   console.log('Inserted result:', result);
   return result.length === 1 ? (result[0] as RefundModel) : null;

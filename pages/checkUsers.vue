@@ -3,7 +3,7 @@
     <Header title="查看用戶"/>
   </div>
     <div class="flex justify-evenly items-center">
-            <div class="flex items-center border rounded-md w-2/3 my-2 ml-4">
+            <div class="flex items-center border-2 border-blue-500 rounded-md w-2/3 my-2 ml-4">
                 <Icon name="material-symbols-search-rounded" class="h-5 w-5 text-gray-500 mx-2" /></input>
                 <input
                 v-model="searchQuery"
@@ -18,27 +18,29 @@
             class="z-20"/>
     </div>
 
-    <div class="flex flex-col">
-    <div class="grid grid-cols-[80px_4fr_4fr_4fr_40px] bg-gray-100 font-bold py-2 text-center border-b border-gray-300">
-      <div>用戶編號</div>
-      <div>LINE名字</div>
-      <div>加入時間</div>
-      <div>生日</div>
-    </div>
+    <div class="flex flex-col mb-20">
+      <div class="grid grid-cols-[80px_1fr_1fr_1fr_60px] bg-gray-100 font-semibold text-sm text-gray-700 py-3 border-b border-gray-300 items-center">
+        <div class="text-center">用戶編號</div>
+        <div class="text-center">LINE 名字</div>
+        <div class="text-center">加入時間</div>
+        <div class="text-center">出生日期</div>
+        <div class="flex justify-center"><Icon name="tdesign:setting-filled" /></div>
+      </div>
+
 
     <!-- 數據列 -->
-    <div v-for="(item, index) in filteredUsers" :key="index" class="grid grid-cols-[80px_4fr_4fr_4fr_40px] text-center py-2 border-b border-gray-300 items-center">
+    <div v-for="(item, index) in filteredUsers" :key="index" class="grid grid-cols-[80px_1fr_1fr_1fr_60px] text-center text-sm py-3 border-b border-gray-300 items-center">
       <div>{{ item.id }}</div>
       <div>{{ item.full_name }}</div>
-      <div>{{ formatDate(item.created_at) }}</div>
+      <div class="bg-gray-100">{{ formatDate(item.created_at) }}</div>
       <div>{{ formatDate(item.birthday) }}</div>
       <div v-if="showExtendColumn"
-        class=" text-red-500 px-4 py-1 rounded ml-2"
+        class=" text-red-500 px-4 rounded ml-2r"
       >
       <Icon
     :name="currentAction === 'edit'
-      ? 'material-symbols-edit-outline'
-      : 'mdi:delete'"
+      ? 'ooui:recent-changes-ltr'
+      : 'streamline:file-delete-alternate-solid'"
     :class="currentAction === 'edit'
       ? 'text-blue-500 cursor-pointer'
       : 'text-red-500 cursor-pointer'"
@@ -80,7 +82,7 @@ onMounted(fetchData)
 
 
 const menuItems = ref([
-  { label: '修改', action: 'edit', icon: 'material-symbols-edit-outline' },
+  { label: '修改', action: 'edit', icon: 'ooui:recent-changes-ltr' },
   { label: '刪除', action: 'delete', icon: 'mdi:delete' },
   { label: '添加', action: 'add', icon: 'mdi:plus' }
 ]);

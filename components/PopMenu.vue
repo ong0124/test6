@@ -2,7 +2,7 @@
   <div class="relative inline-block text-left" ref="menuRef">
     <div
       @click="isOpen = !isOpen"
-      class="px-4 py-2 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600 flex items-center gap-2 cursor-pointer"
+      class="px-4 py-1 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600 flex items-center gap-2 cursor-pointer"
     >
       <img :src="buttonIcon" alt="menu icon" class="w-5 h-5" v-if="buttonIcon" />
       {{ buttonText }}
@@ -12,7 +12,7 @@
     <div
       v-if="isOpen"
       :class="menuPosition"
-      class="absolute mt-2 w-48 bg-white border rounded-md shadow-lg"
+      class="absolute mt-2 w-48 bg-white border rounded-sm shadow-lg"
     >
       <ul class="py-2 text-gray-700">
         <li v-for="(item, index) in items" :key="index">

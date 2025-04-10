@@ -1,5 +1,5 @@
 <template>
-  <header class="py-6 border-b bg-orange-400 flex items-center justify-center relative">
+  <header class="py-4 border-b bg-orange-400 flex items-center justify-center relative">
     <button 
       v-if="showBack" 
       @click="router.back()" 

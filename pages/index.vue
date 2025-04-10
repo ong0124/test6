@@ -5,8 +5,8 @@
   <div>
 
     <div class="flex justify-evenly items-center">
-        <div class="flex items-center border rounded-md w-2/3 my-2 ml-4">
-              <Icon name="material-symbols-search-rounded" class="h-5 w-5 text-gray-500 mx-2" /></input>
+        <div class="flex items-center border-2 border-blue-500 rounded-md w-2/3 my-2 ml-4">
+              <Icon name="material-symbols-search-rounded" class="h-5 w-5 text-gray-500 mx-2 " /></input>
               <input
               v-model="searchQuery"
               type="text"
@@ -32,8 +32,8 @@
                   </tr>
                 </thead>
                 <tbody >
-                  <tr v-for="(order, index) in paginatedOrders" :key="index" class="border-b">
-                    <td class="border p-2 text-xs md:text-sm sticky left-0 bg-white z-10">{{ order.id }}</td>
+                  <tr v-for="(order, index) in paginatedOrders" :key="index" class="border-b text-center">
+                    <td class="border p-2 text-xs md:text-md sticky left-0 bg-gray-50 z-10">{{ order.id }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.contact }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.phone }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ t(`${order.departure_loc}`) }}</td>
@@ -50,10 +50,10 @@
                     <th v-if="showDeleteColumn">
                       <button 
                         v-if="showDeleteColumn"
-                        class=" text-red-500 px-4 py-1 rounded ml-2"
+                        class=" text-red-500 px-4 py-1 rounded"
                         @click="DeleteOrder(order.id)"
                       >
-                        <Icon name="mdi:delete" class="text-red-500"/>
+                        <Icon name="mdi:delete" class="text-red-500 w-5 h-5"/>
                       </button>
                     </th>
                     
@@ -138,11 +138,11 @@ const filteredOrders = computed(() => {
 });
 
 const tableHeaders = [
-    '訂單 ID','聯絡人', '電話', '上車地點', '下車地點','日期',  
+    '訂單 ID','聯絡人', '電話號碼', '上車地點', '下車地點','日期',  
     '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '總價格',
   ];
   const currentPage = ref(1); // 當前頁數
-  const itemsPerPage = 10; // 每頁顯示 5 筆數據
+  const itemsPerPage = 10; // 每頁顯示 5 筆數據出生日期
   
   // 計算當前頁面的數據
   const paginatedOrders = computed(() => {
