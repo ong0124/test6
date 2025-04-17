@@ -53,9 +53,9 @@
           <div class="flex">
             <span class="w-24 text-gray-400">旅程：</span>
             <span class="flex-1 flex justify-between">
-              <span>{{ item.departure_loc }}</span>
+              <span>{{ t(`${item.departure_loc}`) }}</span>
               <span>to</span>
-              <span>{{ item.destination_loc }}</span>
+              <span>{{ t(`${item.destination_loc}`) }}</span>
             </span>
           </div>
 
@@ -96,7 +96,7 @@
 <script setup lang="ts">
 import type { RefundModel } from '~/server/models/refund';
 
-
+const { t } = useI18n();
 const refunds = ref<any[]>([]);
   const data = ref<RefundModel[]>([]);
   const fetchData = async () => {
