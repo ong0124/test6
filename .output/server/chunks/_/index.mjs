@@ -10,7 +10,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   props: {
     title: {
       type: String,
-      default: "金門通管理"
+      default: "上車巴管理"
     },
     showBack: {
       type: Boolean,
