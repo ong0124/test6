@@ -158,9 +158,14 @@ const tableHeaders = [
   
 const orders = ref<any[]>([]);
 const data = ref<BookingModel[]>([]);
-const fetchData = async () => {
+const sortBy = ref('departure_loc');
+const fetchData = async (sortField: string = 'departure_loc') => {
     try {
-      const result = await $fetch('/api/GETallOrders');
+      const result = await $fetch('/api/GETbooking', {
+        query: {  // 使用 query 而不是 params
+          sortBy: sortField
+        }
+      });
       data.value = result.data as BookingModel[];
       orders.value = data.value.map(booking => ({
         id: booking.id,
@@ -171,35 +176,43 @@ const fetchData = async () => {
         status: booking.status,
         adult_num: booking.adult_num,
         child_num: booking.child_num,
-        totalTickets:booking.total_tickets,
+        totalTickets: booking.total_tickets,
         totalprice: booking.totalprice,
         contact: booking.contact_name,
         phone: booking.contact_phone
       }));
-    } catch {
-      alert('Fetch error');
+    } catch (error) {
+      console.error('Fetch error:', error);
+      alert('獲取數據失敗');
     }
-  };
+};
 
-onMounted(fetchData)
+onMounted(()=> fetchData(sortBy.value));
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const showDeleteColumn = ref(false);
-const handleItemSelected = (action: string) => {
-if (action === 'print') {
-  generatePDF();
-} else if (action === 'delete') {
-  showDeleteColumn.value = true;
-  if (scrollContainer.value) {
+const handleItemSelected = async (action: string) => {
+  console.log('選擇的動作:', action);
+  if (action === 'print') {
+    generatePDF();
+  } else if (action === 'delete') {
+    showDeleteColumn.value = true;
+    if (scrollContainer.value) {
       scrollContainer.value.scrollTo({
         left: scrollContainer.value.scrollWidth,
         behavior: 'smooth'
       });
     }
-} else if (action === 'add') {
-  router.push('/addOrders'); 
-}
+  } else if (action === 'add') {
+    router.push('/addOrders');
+  } else if (action === 'timeAsc') {
+    sortBy.value = 'shuttle_time';
+    await fetchData(sortBy.value);
+  } else if (action === 'locAsc') {
+    sortBy.value = 'departure_loc';
+    await fetchData(sortBy.value);
+  }
 };
 
 const DeleteOrder = async (id: number) => {

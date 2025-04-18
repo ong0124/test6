@@ -2,21 +2,24 @@ import { H3Event } from "h3";
 
 import * as bookingModel from '~~/server/models/booking'
 
-export const read = async () =>{
-    try{
-        const result = await bookingModel.read();
+export const read = async (event: H3Event) => {
+  const query = getQuery(event);
+  const sortBy = (query.sortBy as string) || 'departure_loc';
 
-        return{
-            data:result
-        };
-    }
-    catch(err){
-        throw createError({
-            statusCode:500,
-            statusMessage:'Something went wrong'
-        });
-    }
+  try {
+    const result = await bookingModel.read(sortBy);
+
+    return {
+      data: result
+    };
+  } catch (err) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Something went wrong'
+    });
+  }
 };
+
 
 export const create = async (evt: H3Event)=>{
     try{
@@ -177,21 +180,3 @@ export const remove = async (evt: H3Event) => {
       });
     }
   };
-
-
-  //管理管  Management
-  export const checkOrders = async () =>{
-    try{
-        const result = await bookingModel.checkOrders();
-
-        return{
-            data:result
-        };
-    }
-    catch(err){
-        throw createError({
-            statusCode:500,
-            statusMessage:'Something went wrong'
-        });
-    }
-};

@@ -23,9 +23,6 @@ router.post('/PostRefund/:id',defineEventHandler(RefundCtrl.create));
 router.get('/GetAllRefund',defineEventHandler(RefundCtrl.readAll))
 router.put('/ApproveRefund', defineEventHandler(RefundCtrl.update));
 
-//管理端的api
-router.get('/GETallOrders', defineEventHandler(BookingCtrl.checkOrders));
-
 router.get('/GETDetailUsers/:id', defineEventHandler(usersCtrl.detail));
 router.get('/GetUser', defineEventHandler(usersCtrl.read));
 router.put('/EditUser', defineEventHandler(usersCtrl.update));

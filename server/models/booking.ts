@@ -29,13 +29,14 @@ export type BookingModel = {
 }
 
 
-export const read = async () =>{
-    const result = await sql({
-        query: 'SELECT * From booking'
-    });
+export const read = async (sortBy: string = 'departure_loc') => {
+  const result = await sql({
+    query: `SELECT *, (adult_num + child_num) AS total_tickets FROM booking ORDER BY \`${sortBy}\` ASC`
+  });
 
-    return result as BookingModel[];
-}
+  return result as BookingModel[];
+};
+
 
 export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel, 'id' | 'status'| 'total_tickets'>>)=>{
     const result = (await sql({
@@ -178,13 +179,3 @@ export const remove = async (id: string) => {
   
     return true;
   };
-  
-
-  //管理端 Management
-  export const checkOrders = async () =>{
-    const result = await sql({
-        query: 'SELECT *, (adult_num + child_num) AS total_tickets FROM booking ORDER BY shuttle_date ASC, shuttle_time ASC'
-    });
-
-    return result as BookingModel[];
-}
