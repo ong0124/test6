@@ -31,7 +31,7 @@
                   </tr>
                 </thead>
                 <tbody >
-                  <tr v-for="(order, index) in paginatedOrders" :key="index" class="border-b text-center">
+                  <tr v-for="(order, index) in filteredOrders" :key="index" class="border-b text-center">
                     <td class="border p-2 text-xs md:text-md sticky left-0 bg-gray-50 z-10">{{ order.id }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.contact }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.phone }}</td>
@@ -98,7 +98,7 @@ doc.text("訂單詳情", 14, 10);
 
 // 表格数据
 const headers = [tableHeaders];
-const data = paginatedOrders.value.map(order => [
+const data = filteredOrders.value.map(order => [
 order.id,
 order.contact,
 order.phone,
@@ -140,14 +140,6 @@ const tableHeaders = [
     '訂單 ID','聯絡人', '電話號碼', '上車地點', '下車地點','日期',  
     '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '總價格',
   ];
-  const currentPage = ref(1); // 當前頁數
-  const itemsPerPage = 10; // 每頁顯示 5 筆數據出生日期
-  
-  // 計算當前頁面的數據
-  const paginatedOrders = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage;
-    return filteredOrders.value.slice(start, start + itemsPerPage);
-  });
   
   // 設置狀態顏色
   const statusClass = (status: string) => ({
@@ -156,10 +148,10 @@ const tableHeaders = [
     'text-yellow-600 font-bold': status === '处理中'
   });
   
-const orders = ref<any[]>([]);
-const data = ref<BookingModel[]>([]);
-const sortBy = ref('departure_loc');
-const fetchData = async (sortField: string = 'departure_loc') => {
+  const orders = ref<any[]>([]);
+  const data = ref<BookingModel[]>([]);
+  const sortBy = ref('departure_loc');
+  const fetchData = async (sortField: string = 'departure_loc') => {
     try {
       const result = await $fetch('/api/GETbooking', {
         query: {  // 使用 query 而不是 params
@@ -185,47 +177,47 @@ const fetchData = async (sortField: string = 'departure_loc') => {
       console.error('Fetch error:', error);
       alert('獲取數據失敗');
     }
-};
-
-onMounted(()=> fetchData(sortBy.value));
-
-const scrollContainer = ref<HTMLElement | null>(null)
-
-const showDeleteColumn = ref(false);
-const handleItemSelected = async (action: string) => {
-  console.log('選擇的動作:', action);
-  if (action === 'print') {
-    generatePDF();
-  } else if (action === 'delete') {
-    showDeleteColumn.value = true;
-    if (scrollContainer.value) {
-      scrollContainer.value.scrollTo({
-        left: scrollContainer.value.scrollWidth,
-        behavior: 'smooth'
-      });
+  };
+  
+  onMounted(()=> fetchData(sortBy.value));
+  
+  const scrollContainer = ref<HTMLElement | null>(null)
+  
+  const showDeleteColumn = ref(false);
+  const handleItemSelected = async (action: string) => {
+    console.log('選擇的動作:', action);
+    if (action === 'print') {
+      generatePDF();
+    } else if (action === 'delete') {
+      showDeleteColumn.value = true;
+      if (scrollContainer.value) {
+        scrollContainer.value.scrollTo({
+          left: scrollContainer.value.scrollWidth,
+          behavior: 'smooth'
+        });
+      }
+    } else if (action === 'add') {
+      router.push('/addOrders');
+    } else if (action === 'timeAsc') {
+      sortBy.value = 'shuttle_time';
+      await fetchData(sortBy.value);
+    } else if (action === 'locAsc') {
+      sortBy.value = 'departure_loc';
+      await fetchData(sortBy.value);
     }
-  } else if (action === 'add') {
-    router.push('/addOrders');
-  } else if (action === 'timeAsc') {
-    sortBy.value = 'shuttle_time';
-    await fetchData(sortBy.value);
-  } else if (action === 'locAsc') {
-    sortBy.value = 'departure_loc';
-    await fetchData(sortBy.value);
-  }
-};
-
-const DeleteOrder = async (id: number) => {
-  console.log("ID"+ id);
-  try {
-    const response = await $fetch('/api/DeleteBookingById', {
-      method: 'DELETE',
-      body: {id},
-    });
+  };
+  
+  const DeleteOrder = async (id: number) => {
+    console.log("ID"+ id);
+    try {
+      const response = await $fetch('/api/DeleteBookingById', {
+        method: 'DELETE',
+        body: {id},
+      });
     if (response) {
-        await fetchData(); // 重新獲取資料
-      } else {
-        alert("Post Failed: No valid response");
+      await fetchData(); // 重新獲取資料
+    } else {
+      alert("Post Failed: No valid response");
     }
   } catch {
     alert('Delete error');

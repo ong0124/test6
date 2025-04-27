@@ -21,7 +21,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'unhead/server';
 import 'unhead/utils';
@@ -30,7 +29,6 @@ import 'unhead/plugins';
 import '@vueuse/core';
 import 'pinia';
 
-const itemsPerPage = 10;
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "index",
   __ssrInlineRender: true,
@@ -53,7 +51,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       doc.setFont("SourceHanSans-Normal");
       doc.text("訂單詳情", 14, 10);
       const headers = [tableHeaders];
-      const data2 = paginatedOrders.value.map((order) => [
+      const data2 = filteredOrders.value.map((order) => [
         order.id,
         order.contact,
         order.phone,
@@ -103,11 +101,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       "全票數",
       "總價格"
     ];
-    const currentPage = ref(1);
-    const paginatedOrders = computed(() => {
-      const start = (currentPage.value - 1) * itemsPerPage;
-      return filteredOrders.value.slice(start, start + itemsPerPage);
-    });
     const statusClass = (status) => ({
       "text-green-600 font-bold": status === "已完成",
       "text-red-600 font-bold": status === "未出行",
@@ -196,7 +189,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _push(`<!---->`);
       }
       _push(`</tr></thead><tbody><!--[-->`);
-      ssrRenderList(unref(paginatedOrders), (order, index) => {
+      ssrRenderList(unref(filteredOrders), (order, index) => {
         _push(`<tr class="border-b text-center"><td class="border p-2 text-xs md:text-md sticky left-0 bg-gray-50 z-10">${ssrInterpolate(order.id)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.contact)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.phone)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.departure_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.destination_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(("formatDate" in _ctx ? _ctx.formatDate : unref(formatDate))(order.shuttle_date))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.shuttle_time)}</td><td class="border p-2 text-xs md:text-sm"><span class="${ssrRenderClass(statusClass(order.status))}">${ssrInterpolate(order.status)}</span></td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.adult_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.child_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalTickets)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalprice)}</td>`);
         if (showDeleteColumn.value) {
           _push(`<th>`);

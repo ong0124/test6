@@ -16,32 +16,44 @@ export type RefundModel = {
 }
 
 
-export const readAll = async () =>{
-    const result = await sql({
-        query:  `
-        SELECT 
-            r.id,
-            r.booking_id,
-            r.LineID,
-            r.status,
-            r.refund_amount,
-            r.created_at,
-            u.full_name,
-            b.departure_loc,
-            b.destination_loc,
-            b.shuttle_date,
-            b.shuttle_time
-        FROM 
-            refund_apply r
-        JOIN 
-            users u ON r.LineID = u.LineID
-        JOIN 
-            booking b ON r.booking_id = b.id
-    `
-    });
+export const readAll = async (filter: string) => {
+  let query = `
+    SELECT 
+      r.id,
+      r.booking_id,
+      r.LineID,
+      r.status,
+      r.refund_amount,
+      r.created_at,
+      u.full_name,
+      b.departure_loc,
+      b.destination_loc,
+      b.shuttle_date,
+      b.shuttle_time
+    FROM 
+      refund_apply r
+    JOIN 
+      users u ON r.LineID = u.LineID
+    JOIN 
+      booking b ON r.booking_id = b.id
+  `;
 
-    return result as RefundModel[];
-}
+  if (filter === 'approved') {
+    query += ` WHERE r.status = 'approved'`;
+  } else if (filter === 'null') {
+    query += ` WHERE r.status IS NULL`;
+  }
+
+  query += `
+    ORDER BY 
+      r.status IS NULL DESC,
+      r.status ASC
+  `;
+
+  const result = await sql({ query });
+  return result as RefundModel[];
+};
+
 
 export const create = async (data: Pick<RefundModel,Exclude<keyof RefundModel, 'id' | 'status' |'refund_amount'>>) => {
   const result = (await sql({
@@ -68,7 +80,7 @@ export const update = async (id: string, data: Pick<RefundModel, 'status' >) => 
     query: `
       UPDATE refund_apply
       SET
-        status = ?,
+        status = ?
       WHERE id = ?
     `,
     values: [data.status, id]

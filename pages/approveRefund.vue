@@ -4,17 +4,32 @@
   </div>
   
   <div class="flex justify-center mt-2 space-x-1">
-    <div class="flex items-center gap-2 px-4 py-1 bg-blue-500 border border-blue-300 rounded-md shadow-sm w-fit">
-      <Icon name="material-symbols:border-all-rounded" class="w-5 h-5 text-white" />
-      <p class="text-sm font-medium text-white">全部</p>
+    <div 
+    :class="[
+    'flex items-center gap-2 px-4 py-1 border border-blue-300 rounded-md shadow-sm w-fit',
+    currentFilter === 'all' ? 'bg-blue-500 text-white' : 'bg-white text-blue-600'
+    ]"
+    @click="filterData('all')">
+      <Icon name="material-symbols:border-all-rounded" class="w-5 h-5 " />
+      <p class="text-sm font-medium ">全部</p>
     </div>
-    <div class="flex items-center gap-2 px-4 py-1 bg-white border border-blue-300 rounded-md shadow-sm w-fit">
-      <Icon name="mingcute:bill-fill" class="w-5 h-5 text-blue-500" />
-      <p class="text-sm font-medium text-blue-600">待批准的退款</p>
+    <div 
+    :class="[
+    'flex items-center gap-2 px-4 py-1 border border-blue-300 rounded-md shadow-sm w-fit',
+    currentFilter === 'null' ? 'bg-blue-500 text-white' : 'bg-white text-blue-600'
+    ]"
+    @click="filterData('null')">
+      <Icon name="mingcute:bill-fill" class="w-5 h-5 " />
+      <p class="text-sm font-medium ">待批准的退款</p>
     </div>
-    <div class="flex items-center gap-2 px-4 py-1 bg-white border border-blue-300 rounded-md shadow-sm w-fit">
-      <Icon name="lets-icons:done-all-round" class="w-5 h-5 text-blue-500" />
-      <p class="text-sm font-medium text-blue-600">已通过</p>
+    <div
+    :class="[
+    'flex items-center gap-2 px-4 py-1 border border-blue-300 rounded-md shadow-sm w-fit',
+    currentFilter === 'approved' ? 'bg-blue-500 text-white' : 'bg-white text-blue-600'
+    ]"
+    @click="filterData('approved')">
+      <Icon name="lets-icons:done-all-round" class="w-5 h-5 " />
+      <p class="text-sm font-medium ">已通过</p>
     </div>
   </div>
 
@@ -77,10 +92,12 @@
 
           <!--右-->
           <div class="flex space-x-2">
-            <button class="rounded border text-red-400 border-red-500 hover:bg-red-400 hover:text-white px-3 py-1 text-sm transition">
+            <button class="rounded border text-red-400 border-red-500 hover:bg-red-400 hover:text-white px-3 py-1 text-sm transition" 
+            @click="handleReject(item.id)">
               拒絕退款
             </button>
-            <button class="rounded bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm transition">
+            <button class="rounded bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm transition"
+            @click="handleApprove(item.id)">
               同意退款
             </button>
           </div>
@@ -97,11 +114,16 @@
 import type { RefundModel } from '~/server/models/refund';
 
 const { t } = useI18n();
+
 const refunds = ref<any[]>([]);
-  const data = ref<RefundModel[]>([]);
-  const fetchData = async () => {
+const data = ref<RefundModel[]>([]);
+
+  const fetchData = async (filter: string) => {
       try {
-        const result = await $fetch('/api/GetAllRefund');
+        const result = await $fetch('/api/GetAllRefund', {
+          params: { filter }
+          }
+        );
         data.value = result.data as RefundModel[];
         refunds.value = data.value.map(refunds => ({
           id: refunds.id,
@@ -113,12 +135,48 @@ const refunds = ref<any[]>([]);
           destination_loc: refunds.destination_loc,
           shuttle_date: refunds.shuttle_date,
           shuttle_time: refunds.shuttle_time,
+          status: refunds.status
         }));
-      } catch {
+      } catch (err){
         alert('Fetch error');
       }
     };
 
-  onMounted(fetchData)
+  // filterData 函式用來處理過濾條件
+  const currentFilter = ref('all');
+    const filterData = (filter: string) => {
+      currentFilter.value = filter;
+      fetchData(filter); 
+    };
 
+    // 預設載入全部資料
+    onMounted(() => {
+      filterData('all');
+    });
+
+const handleApprove = async (id: number) => {
+  try {
+    const res= await $fetch('/api/ApproveRefund', {
+      method: 'PUT',
+      body: { id, status: 'approved' },
+    });
+    await fetchData(currentFilter.value);
+    console.log(`退款 ${id} 同意，狀態碼：`, res);
+  } catch (error) {
+    console.error(`退款 ${id} 同意失敗：`, error);
+  }
+};
+
+const handleReject = async (id: number) => {
+  try {
+    const res = await $fetch('/api/ApproveRefund', {
+      method: 'PUT',
+      body: { id, status: 'rejected' },
+    });
+    await fetchData(currentFilter.value);
+    console.log(`退款 ${id} 拒絕，狀態碼：`, res);
+  } catch (error) {
+    console.error(`退款 ${id} 拒絕失敗：`, error);
+  }
+};
 </script>

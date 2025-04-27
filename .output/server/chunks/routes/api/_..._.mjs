@@ -9,7 +9,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 
 const pool = createPool({
@@ -486,29 +485,38 @@ const update$2 = async (evt) => {
   }
 };
 
-const readAll$1 = async () => {
-  const result = await sql({
-    query: `
-        SELECT 
-            r.id,
-            r.booking_id,
-            r.LineID,
-            r.status,
-            r.refund_amount,
-            r.created_at,
-            u.full_name,
-            b.departure_loc,
-            b.destination_loc,
-            b.shuttle_date,
-            b.shuttle_time
-        FROM 
-            refund_apply r
-        JOIN 
-            users u ON r.LineID = u.LineID
-        JOIN 
-            booking b ON r.booking_id = b.id
-    `
-  });
+const readAll$1 = async (filter) => {
+  let query = `
+    SELECT 
+      r.id,
+      r.booking_id,
+      r.LineID,
+      r.status,
+      r.refund_amount,
+      r.created_at,
+      u.full_name,
+      b.departure_loc,
+      b.destination_loc,
+      b.shuttle_date,
+      b.shuttle_time
+    FROM 
+      refund_apply r
+    JOIN 
+      users u ON r.LineID = u.LineID
+    JOIN 
+      booking b ON r.booking_id = b.id
+  `;
+  if (filter === "approved") {
+    query += ` WHERE r.status = 'approved'`;
+  } else if (filter === "null") {
+    query += ` WHERE r.status IS NULL`;
+  }
+  query += `
+    ORDER BY 
+      r.status IS NULL DESC,
+      r.status ASC
+  `;
+  const result = await sql({ query });
   return result;
 };
 const create$1 = async (data) => {
@@ -534,7 +542,7 @@ const update$1 = async (id, data) => {
     query: `
       UPDATE refund_apply
       SET
-        status = ?,
+        status = ?
       WHERE id = ?
     `,
     values: [data.status, id]
@@ -542,9 +550,11 @@ const update$1 = async (id, data) => {
   console.log(result);
 };
 
-const readAll = async () => {
+const readAll = async (evt) => {
   try {
-    const result = await readAll$1();
+    const query = getQuery(evt);
+    const filter = query.filter || "all";
+    const result = await readAll$1(filter);
     return {
       data: result
     };
@@ -565,7 +575,7 @@ const create = async (evt) => {
     }
     const result = await create$1({
       booking_id: Number(id),
-      user_id: body.user_id,
+      LineID: body.user_id,
       created_at: body.created_at
     });
     return {
@@ -590,6 +600,7 @@ const update = async (evt) => {
       status: body.status
     });
     return {
+      message: "\u66F4\u65B0\u6210\u529F",
       data: result
     };
   } catch {

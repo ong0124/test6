@@ -1,21 +1,23 @@
 import { H3Event } from "h3";
 import * as refundModel from '~~/server/models/refund'
 
-export const readAll = async () =>{
-    try{
-        const result = await refundModel.readAll();
+export const readAll = async (evt: H3Event) => {
+    try {
+      const query = getQuery(evt);  // 獲取過濾參數
+      const filter = (query.filter as string) || 'all';  // 默認是 'all'
 
-        return{
-            data:result
-        };
+      const result = await refundModel.readAll(filter);
+
+      return {
+        data: result
+      };
+    } catch (err) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Something went wrong'
+      });
     }
-    catch(err){
-        throw createError({
-            statusCode:500,
-            statusMessage:'Something went wrong'
-        });
-    }
-};
+  };
 
 export const create = async (evt: H3Event) => {
   try {
@@ -28,7 +30,7 @@ export const create = async (evt: H3Event) => {
     }
     const result = await refundModel.create({
       booking_id: Number(id),
-      user_id: body.user_id,
+      LineID: body.user_id,
       created_at: body.created_at
     });
     return {
@@ -56,6 +58,7 @@ export const update = async (evt: H3Event) => {
     });
 
     return {
+      message: '更新成功',
       data: result
     };
   } catch {

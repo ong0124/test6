@@ -20,7 +20,7 @@ router.delete('/DeleteBookingById', defineEventHandler(BookingCtrl.remove));
 router.get('/FindBookingDetailById/:id', defineEventHandler(BookingCtrl.FindBookingDetailById));
 
 router.post('/PostRefund/:id',defineEventHandler(RefundCtrl.create));
-router.get('/GetAllRefund',defineEventHandler(RefundCtrl.readAll))
+router.get('/GetAllRefund',defineEventHandler(RefundCtrl.readAll));
 router.put('/ApproveRefund', defineEventHandler(RefundCtrl.update));
 
 router.get('/GETDetailUsers/:id', defineEventHandler(usersCtrl.detail));
