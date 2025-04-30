@@ -26,12 +26,13 @@ export type BookingModel = {
     return_shuttle_time: string; 
     status : string;
     total_tickets?: number;
+    payment_status?: string;
 }
 
 
 export const read = async (sortBy: string = 'departure_loc') => {
   const result = await sql({
-    query: `SELECT *, (adult_num + child_num) AS total_tickets FROM booking ORDER BY \`${sortBy}\` ASC`
+    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID ORDER BY b.status ASC, b.\`${sortBy}\` ASC`
   });
 
   return result as BookingModel[];

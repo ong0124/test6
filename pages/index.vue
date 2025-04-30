@@ -40,11 +40,12 @@
                     <td class="border p-2 text-xs md:text-sm">{{ formatDate(order.shuttle_date) }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.shuttle_time }}</td>
                     <td class="border p-2 text-xs md:text-sm">
-                      <span :class="statusClass(order.status)">{{ order.status }}</span>
+                      <span :class="statusClass(order.status)">{{ TranslateStatus(order.status) }}</span>
                     </td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.adult_num }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.child_num }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.totalTickets }}</td>
+                    <td class="border p-2 text-xs md:text-sm">{{ order.payment_status }}</td>
                     <td class="border p-2 text-xs md:text-sm">{{ order.totalprice }}</td>
                     <th v-if="showDeleteColumn">
                       <button 
@@ -102,15 +103,16 @@ const data = filteredOrders.value.map(order => [
 order.id,
 order.contact,
 order.phone,
-t(`${order.departure_loc}`),  // 這裡要翻譯
-t(`${order.destination_loc}`), // 這裡要翻譯
+t(`${order.departure_loc}`),  
+t(`${order.destination_loc}`), 
 formatDate(order.shuttle_date),
 order.shuttle_time,
 order.status,
 order.adult_num,
 order.child_num,
 order.totalTickets,
-order.totalprice
+order.totalprice,
+order.payment_status
 ]);
 
 autoTable(doc, {
@@ -138,7 +140,7 @@ const filteredOrders = computed(() => {
 
 const tableHeaders = [
     '訂單 ID','聯絡人', '電話號碼', '上車地點', '下車地點','日期',  
-    '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '總價格',
+    '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '是否付款','總價格',
   ];
   
   // 設置狀態顏色
@@ -171,7 +173,8 @@ const tableHeaders = [
         totalTickets: booking.total_tickets,
         totalprice: booking.totalprice,
         contact: booking.contact_name,
-        phone: booking.contact_phone
+        phone: booking.contact_phone,
+        payment_status: booking.payment_status
       }));
     } catch (error) {
       console.error('Fetch error:', error);

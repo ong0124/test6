@@ -29,6 +29,14 @@ import 'unhead/plugins';
 import '@vueuse/core';
 import 'pinia';
 
+function TranslateStatus(status) {
+  const statusMap = {
+    complete: "完成",
+    notTraveled: "未出行"
+  };
+  return statusMap[status] || "未知状态";
+}
+
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "index",
   __ssrInlineRender: true,
@@ -56,16 +64,15 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         order.contact,
         order.phone,
         t(`${order.departure_loc}`),
-        // 這裡要翻譯
         t(`${order.destination_loc}`),
-        // 這裡要翻譯
         formatDate(order.shuttle_date),
         order.shuttle_time,
         order.status,
         order.adult_num,
         order.child_num,
         order.totalTickets,
-        order.totalprice
+        order.totalprice,
+        order.payment_status
       ]);
       autoTable(doc, {
         head: headers,
@@ -99,6 +106,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       "成人票(人)",
       "兒童票(人)",
       "全票數",
+      "是否付款",
       "總價格"
     ];
     const statusClass = (status) => ({
@@ -130,7 +138,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           totalTickets: booking.total_tickets,
           totalprice: booking.totalprice,
           contact: booking.contact_name,
-          phone: booking.contact_phone
+          phone: booking.contact_phone,
+          payment_status: booking.payment_status
         }));
       } catch (error) {
         console.error("Fetch error:", error);
@@ -190,7 +199,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       _push(`</tr></thead><tbody><!--[-->`);
       ssrRenderList(unref(filteredOrders), (order, index) => {
-        _push(`<tr class="border-b text-center"><td class="border p-2 text-xs md:text-md sticky left-0 bg-gray-50 z-10">${ssrInterpolate(order.id)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.contact)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.phone)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.departure_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.destination_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(("formatDate" in _ctx ? _ctx.formatDate : unref(formatDate))(order.shuttle_date))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.shuttle_time)}</td><td class="border p-2 text-xs md:text-sm"><span class="${ssrRenderClass(statusClass(order.status))}">${ssrInterpolate(order.status)}</span></td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.adult_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.child_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalTickets)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalprice)}</td>`);
+        _push(`<tr class="border-b text-center"><td class="border p-2 text-xs md:text-md sticky left-0 bg-gray-50 z-10">${ssrInterpolate(order.id)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.contact)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.phone)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.departure_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(unref(t)(`${order.destination_loc}`))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(("formatDate" in _ctx ? _ctx.formatDate : unref(formatDate))(order.shuttle_date))}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.shuttle_time)}</td><td class="border p-2 text-xs md:text-sm"><span class="${ssrRenderClass(statusClass(order.status))}">${ssrInterpolate(("TranslateStatus" in _ctx ? _ctx.TranslateStatus : unref(TranslateStatus))(order.status))}</span></td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.adult_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.child_num)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalTickets)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.payment_status)}</td><td class="border p-2 text-xs md:text-sm">${ssrInterpolate(order.totalprice)}</td>`);
         if (showDeleteColumn.value) {
           _push(`<th>`);
           if (showDeleteColumn.value) {

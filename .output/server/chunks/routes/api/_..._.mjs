@@ -186,7 +186,7 @@ const remove$4 = async (evt) => {
 
 const read$3 = async (sortBy = "departure_loc") => {
   const result = await sql({
-    query: `SELECT *, (adult_num + child_num) AS total_tickets FROM booking ORDER BY \`${sortBy}\` ASC`
+    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID ORDER BY b.status ASC, b.\`${sortBy}\` ASC`
   });
   return result;
 };
