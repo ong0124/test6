@@ -14,7 +14,7 @@ router.get('/confirmationPage/:id', defineEventHandler(BookingCtrl.FindBookingDe
 router.get('/myTrip/:id', defineEventHandler(BookingCtrl.FindBookingByUserId));
 router.get('/reschedulePage/:id', defineEventHandler(BookingCtrl.NotTraveledBooking));
 router.get('/reschedulePage/details/:id', defineEventHandler(BookingCtrl.FindBookingDetailById));
-router.put('/detailsUpdate/:id', defineEventHandler(BookingCtrl.update));
+// router.put('/detailsUpdate/:id', defineEventHandler(BookingCtrl.update));
 router.delete('/DeleteBookingById', defineEventHandler(BookingCtrl.remove));
 
 router.get('/FindBookingDetailById/:id', defineEventHandler(BookingCtrl.FindBookingDetailById));

@@ -317,7 +317,7 @@ const NuxtIconSvg = /* @__PURE__ */ defineComponent({
   }
 });
 
-const __nuxt_component_1 = defineComponent({
+const __nuxt_component_3 = defineComponent({
   name: "NuxtIcon",
   props: {
     name: {
@@ -368,5 +368,5 @@ const __nuxt_component_1 = defineComponent({
   }
 });
 
-export { __nuxt_component_1 as default };
+export { __nuxt_component_3 as default };
 //# sourceMappingURL=index2.mjs.map

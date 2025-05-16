@@ -1,5 +1,6 @@
 import { c as createError, r as readBody, g as getQuery, e as useBase, f as createRouter, h as defineEventHandler } from '../../_/nitro.mjs';
 import { createPool } from 'mysql2/promise';
+import dayjs from 'dayjs';
 import 'node:http';
 import 'node:https';
 import 'node:events';
@@ -67,7 +68,7 @@ const detail$1 = async (id) => {
   });
   return result.length === 1 ? result[0] : null;
 };
-const update$5 = async (id, data) => {
+const update$3 = async (id, data) => {
   await sql({
     query: `
       UPDATE users
@@ -143,13 +144,13 @@ const detail = async (evt) => {
     });
   }
 };
-const update$4 = async (evt) => {
+const update$2 = async (evt) => {
   try {
     const body = await readBody(evt);
     if (!body.id) {
       throw createError({ statusCode: 400, statusMessage: "Missing user ID" });
     }
-    const result = await update$5(body.id, {
+    const result = await update$3(body.id, {
       full_name: body.full_name,
       birthday: body.birthday
     });
@@ -185,18 +186,21 @@ const remove$4 = async (evt) => {
   }
 };
 
-const read$3 = async (sortBy = "departure_loc") => {
+const read$3 = async (sortBy = "departure_loc", date = dayjs().format("YYYY-MM-DD")) => {
+  console.log("\u{1F4C5} \u50B3\u5165 SQL \u7684 date:", date);
   const result = await sql({
-    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID ORDER BY b.status ASC, b.\`${sortBy}\` ASC`
+    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID WHERE b.shuttle_date = ? ORDER BY b.status ASC, b.\`${sortBy}\` ASC`,
+    values: [date]
   });
   return result;
 };
 const create$3 = async (data) => {
+  var _a;
   const result = await sql({
     query: `
       INSERT INTO booking (
       trip_type,
-      user_id,
+      LineID,
       adult_num,
       child_num,
       contact_phone,
@@ -216,12 +220,13 @@ const create$3 = async (data) => {
       shuttle_date,
       shuttle_time,
       return_shuttle_date,
-      return_shuttle_time
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      return_shuttle_time,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     values: [
       data.trip_type,
-      data.user_id,
+      data.LineID,
       data.adult_num,
       data.child_num,
       data.contact_phone,
@@ -241,57 +246,40 @@ const create$3 = async (data) => {
       data.shuttle_date,
       data.shuttle_time,
       data.return_shuttle_date,
-      data.return_shuttle_time
+      data.return_shuttle_time,
+      data.status
     ]
   });
   console.log("Inserted result:", result);
   const insertedId = await sql({
     query: `SELECT LAST_INSERT_ID() AS id;`
   });
-  return insertedId ? { id: insertedId } : null;
-};
-const update$3 = async (id, data) => {
+  const bookingID = (_a = insertedId == null ? void 0 : insertedId[0]) == null ? void 0 : _a.id;
+  if (!bookingID) {
+    console.error("Booking insertion failed or ID not found.");
+    return null;
+  }
   await sql({
     query: `
-        UPDATE booking
-        SET
-          adult_num = ?,
-          child_num = ?,
-          contact_phone = ?,
-          totalprice = ?,
-          contact_name = ?,
-          departure_loc = ?,
-          destination_loc = ?,
-          return_departure = ?,
-          return_destination = ?,
-          ferry_time = ?,
-          flight_time = ?,
-          shuttle_date = ?,
-          shuttle_time = ?,
-          return_shuttle_date = ?,
-          return_shuttle_time = ?
-        WHERE id = ?
-      `,
+      INSERT IGNORE INTO payment (
+        booking_id,
+        payment_amount,
+        payment_method,
+        payment_status,
+        payment_time,
+        LineID
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `,
     values: [
-      data.adult_num,
-      data.child_num,
-      data.contact_phone,
+      bookingID,
       data.totalprice,
-      data.contact_name,
-      data.departure_loc,
-      data.destination_loc,
-      data.return_departure,
-      data.return_destination,
-      data.ferry_time,
-      data.flight_time,
-      data.shuttle_date,
-      data.shuttle_time,
-      data.return_shuttle_date,
-      data.return_shuttle_time,
-      id
+      "\u73FE\u91D1",
+      data.payment_status,
+      /* @__PURE__ */ new Date(),
+      data.LineID
     ]
   });
-  return await FindBookingDetailById$1(id);
+  return { id: bookingID };
 };
 const FindBookingDetailById$1 = async (id) => {
   const result = await sql({
@@ -326,8 +314,10 @@ const remove$3 = async (id) => {
 const read$2 = async (event) => {
   const query = getQuery(event);
   const sortBy = query.sortBy || "departure_loc";
+  const date = query.date || dayjs().format("YYYY-MM-DD");
+  console.log("\u{1F6EC} \u5F8C\u7AEF\u6536\u5230\u67E5\u8A62:", { sortBy, date });
   try {
-    const result = await read$3(sortBy);
+    const result = await read$3(sortBy, date);
     return {
       data: result
     };
@@ -343,7 +333,7 @@ const create$2 = async (evt) => {
     const body = await readBody(evt);
     const result = await create$3({
       trip_type: body.trip_type,
-      user_id: body.user_id,
+      LineID: body.LineID,
       adult_num: body.adult_num,
       child_num: body.child_num,
       contact_phone: body.contact_phone,
@@ -363,7 +353,9 @@ const create$2 = async (evt) => {
       shuttle_date: body.shuttle_date,
       shuttle_time: body.shuttle_time,
       return_shuttle_date: body.return_shuttle_date,
-      return_shuttle_time: body.return_shuttle_time
+      return_shuttle_time: body.return_shuttle_time,
+      status: body.status,
+      payment_status: body.payment_status
     });
     if (!result || !result.id) {
       throw createError({ statusCode: 500, statusMessage: "Failed to create booking, no ID returned" });
@@ -434,50 +426,6 @@ const remove$2 = async (evt) => {
     }
     const result = await remove$3(id);
     return { success: true, data: result };
-  } catch {
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Something went wrong"
-    });
-  }
-};
-const update$2 = async (evt) => {
-  var _a, _b;
-  try {
-    const id = (_a = evt.context.params) == null ? void 0 : _a.id;
-    if (!id) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Invalid request: ID is required"
-      });
-    }
-    const body = await readBody(evt);
-    if (!body) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Invalid request: Missing body data"
-      });
-    }
-    const result = await update$3((_b = evt.context.params) == null ? void 0 : _b.id, {
-      adult_num: body.adult_num,
-      child_num: body.child_num,
-      contact_phone: body.contact_phone,
-      totalprice: body.totalprice,
-      contact_name: body.contact_name,
-      departure_loc: body.departure_loc,
-      destination_loc: body.destination_loc,
-      return_departure: body.return_departure,
-      return_destination: body.return_destination,
-      ferry_time: body.ferry_time,
-      flight_time: body.flight_time,
-      shuttle_date: body.shuttle_date,
-      shuttle_time: body.shuttle_time,
-      return_shuttle_date: body.return_shuttle_date,
-      return_shuttle_time: body.return_shuttle_time
-    });
-    return {
-      data: result
-    };
   } catch {
     throw createError({
       statusCode: 500,
@@ -714,7 +662,6 @@ router.get("/confirmationPage/:id", defineEventHandler(FindBookingDetailById));
 router.get("/myTrip/:id", defineEventHandler(FindBookingByUserId));
 router.get("/reschedulePage/:id", defineEventHandler(NotTraveledBooking));
 router.get("/reschedulePage/details/:id", defineEventHandler(FindBookingDetailById));
-router.put("/detailsUpdate/:id", defineEventHandler(update$2));
 router.delete("/DeleteBookingById", defineEventHandler(remove$2));
 router.get("/FindBookingDetailById/:id", defineEventHandler(FindBookingDetailById));
 router.post("/PostRefund/:id", defineEventHandler(create));
@@ -722,7 +669,7 @@ router.get("/GetAllRefund", defineEventHandler(readAll));
 router.put("/ApproveRefund", defineEventHandler(update));
 router.get("/GETDetailUsers/:id", defineEventHandler(detail));
 router.get("/GetUser", defineEventHandler(read$4));
-router.put("/EditUser", defineEventHandler(update$4));
+router.put("/EditUser", defineEventHandler(update$2));
 router.delete("/DeleteUser", defineEventHandler(remove$4));
 router.post("/POSTUser", defineEventHandler(create$4));
 router.get("/GETallOffdays", defineEventHandler(read));

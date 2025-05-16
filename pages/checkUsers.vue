@@ -137,6 +137,8 @@ const IconHandle = async (item: any) => {
       popupRef.value?.setFormData(item);
     });
   } else if (currentAction.value === 'delete') {
+    const confirmDelete = confirm("你確定要刪除此用戶嗎？");
+    if (!confirmDelete) return;
     try {
       const response = await $fetch('/api/DeleteUser', {
         method: 'DELETE',

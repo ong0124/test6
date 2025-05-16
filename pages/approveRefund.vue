@@ -34,6 +34,7 @@
   </div>
 
   <div class="mb-20 bg-gray-50 pt-2 pb-2">
+    <template v-if="refunds.length > 0">
       <div
         class="bg-white border border-gray-400 mx-2 mb-4 rounded-lg shadow-sm"
         v-for="(item, idx) in refunds"
@@ -103,6 +104,13 @@
           </div>
         </div>
       </div>
+      </template>
+      <template v-else>
+        <div class="text-center text-gray-400 py-10">
+          <Icon name="ic:outline-inbox" class="w-10 h-10 mx-auto mb-2" />
+          <p class="text-sm">暫時沒有退款訂單</p>
+        </div>
+      </template>
     </div>
   <div>
     <BottomNavigator/>

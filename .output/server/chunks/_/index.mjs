@@ -1,4 +1,4 @@
-import __nuxt_component_1 from '../build/index2.mjs';
+import __nuxt_component_3 from '../build/index2.mjs';
 import { defineComponent, mergeProps, ref } from 'vue';
 import { ssrRenderAttrs, ssrRenderComponent, ssrInterpolate, ssrRenderList, ssrRenderClass } from 'vue/server-renderer';
 import { useRouter } from 'vue-router';
@@ -20,7 +20,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   setup(__props) {
     useRouter();
     return (_ctx, _push, _parent, _attrs) => {
-      const _component_Icon = __nuxt_component_1;
+      const _component_Icon = __nuxt_component_3;
       _push(`<header${ssrRenderAttrs(mergeProps({ class: "py-4 border-b bg-orange-400 flex items-center justify-center relative" }, _attrs))}>`);
       if (__props.showBack) {
         _push(`<button class="absolute left-4 text-white hover:text-gray-200">`);
@@ -50,7 +50,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       { name: "offDaySetting", icon: "material-symbols-calendar-month-outline", route: "/offDaySetting" }
     ];
     return (_ctx, _push, _parent, _attrs) => {
-      const _component_Icon = __nuxt_component_1;
+      const _component_Icon = __nuxt_component_3;
       _push(`<footer${ssrRenderAttrs(mergeProps({ class: "border-t bg-gray-50 fixed inset-x-0 bottom-0 z-20" }, _attrs))}><div class="flex justify-between py-2"><!--[-->`);
       ssrRenderList(pages, (page) => {
         _push(`<button class="flex flex-col items-center mx-auto text-sm">`);

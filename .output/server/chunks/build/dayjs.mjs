@@ -207,6 +207,98 @@ const localeValues$1 = {
   }
 };
 
+const isFunction = (val) => typeof val === "function";
+const isArray = Array.isArray;
+const isString = (val) => typeof val === "string";
+const isObject = (val) => val !== null && typeof val === "object";
+const onRE = /^on[^a-z]/;
+const isOn = (key) => onRE.test(key);
+const cacheStringFunction = (fn) => {
+  const cache = /* @__PURE__ */ Object.create(null);
+  return (str) => {
+    const hit = cache[str];
+    return hit || (cache[str] = fn(str));
+  };
+};
+const camelizeRE = /-(\w)/g;
+const camelize = cacheStringFunction((str) => {
+  return str.replace(camelizeRE, (_, c) => c ? c.toUpperCase() : "");
+});
+const hyphenateRE = /\B([A-Z])/g;
+const hyphenate = cacheStringFunction((str) => {
+  return str.replace(hyphenateRE, "-$1").toLowerCase();
+});
+const capitalize = cacheStringFunction((str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+});
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+const hasOwn = (val, key) => hasOwnProperty.call(val, key);
+function resolvePropValue(options, props, key, value) {
+  const opt = options[key];
+  if (opt != null) {
+    const hasDefault = hasOwn(opt, "default");
+    if (hasDefault && value === void 0) {
+      const defaultValue = opt.default;
+      value = opt.type !== Function && isFunction(defaultValue) ? defaultValue() : defaultValue;
+    }
+    if (opt.type === Boolean) {
+      if (!hasOwn(props, key) && !hasDefault) {
+        value = false;
+      } else if (value === "") {
+        value = true;
+      }
+    }
+  }
+  return value;
+}
+function renderHelper(v) {
+  let props = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+  let defaultV = arguments.length > 2 ? arguments[2] : void 0;
+  if (typeof v === "function") {
+    return v(props);
+  }
+  return v !== null && v !== void 0 ? v : defaultV;
+}
+function wrapPromiseFn(openFn) {
+  let closeFn;
+  const closePromise = new Promise((resolve) => {
+    closeFn = openFn(() => {
+      resolve(true);
+    });
+  });
+  const result = () => {
+    closeFn === null || closeFn === void 0 ? void 0 : closeFn();
+  };
+  result.then = (filled, rejected) => closePromise.then(filled, rejected);
+  result.promise = closePromise;
+  return result;
+}
+
+function classNames() {
+  const classes = [];
+  for (let i = 0; i < arguments.length; i++) {
+    const value = i < 0 || arguments.length <= i ? void 0 : arguments[i];
+    if (!value) continue;
+    if (isString(value)) {
+      classes.push(value);
+    } else if (isArray(value)) {
+      for (let i2 = 0; i2 < value.length; i2++) {
+        const inner = classNames(value[i2]);
+        if (inner) {
+          classes.push(inner);
+        }
+      }
+    } else if (isObject(value)) {
+      for (const name in value) {
+        if (value[name]) {
+          classes.push(name);
+        }
+      }
+    }
+  }
+  return classes.join(" ");
+}
+
 const enUS = {
   // Options.jsx
   items_per_page: "/ page",
@@ -409,98 +501,6 @@ const localeValues = {
     scanned: "Scanned"
   }
 };
-
-const isFunction = (val) => typeof val === "function";
-const isArray = Array.isArray;
-const isString = (val) => typeof val === "string";
-const isObject = (val) => val !== null && typeof val === "object";
-const onRE = /^on[^a-z]/;
-const isOn = (key) => onRE.test(key);
-const cacheStringFunction = (fn) => {
-  const cache = /* @__PURE__ */ Object.create(null);
-  return (str) => {
-    const hit = cache[str];
-    return hit || (cache[str] = fn(str));
-  };
-};
-const camelizeRE = /-(\w)/g;
-const camelize = cacheStringFunction((str) => {
-  return str.replace(camelizeRE, (_, c) => c ? c.toUpperCase() : "");
-});
-const hyphenateRE = /\B([A-Z])/g;
-const hyphenate = cacheStringFunction((str) => {
-  return str.replace(hyphenateRE, "-$1").toLowerCase();
-});
-const capitalize = cacheStringFunction((str) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-});
-const hasOwnProperty = Object.prototype.hasOwnProperty;
-const hasOwn = (val, key) => hasOwnProperty.call(val, key);
-function resolvePropValue(options, props, key, value) {
-  const opt = options[key];
-  if (opt != null) {
-    const hasDefault = hasOwn(opt, "default");
-    if (hasDefault && value === void 0) {
-      const defaultValue = opt.default;
-      value = opt.type !== Function && isFunction(defaultValue) ? defaultValue() : defaultValue;
-    }
-    if (opt.type === Boolean) {
-      if (!hasOwn(props, key) && !hasDefault) {
-        value = false;
-      } else if (value === "") {
-        value = true;
-      }
-    }
-  }
-  return value;
-}
-function renderHelper(v) {
-  let props = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-  let defaultV = arguments.length > 2 ? arguments[2] : void 0;
-  if (typeof v === "function") {
-    return v(props);
-  }
-  return v !== null && v !== void 0 ? v : defaultV;
-}
-function wrapPromiseFn(openFn) {
-  let closeFn;
-  const closePromise = new Promise((resolve) => {
-    closeFn = openFn(() => {
-      resolve(true);
-    });
-  });
-  const result = () => {
-    closeFn === null || closeFn === void 0 ? void 0 : closeFn();
-  };
-  result.then = (filled, rejected) => closePromise.then(filled, rejected);
-  result.promise = closePromise;
-  return result;
-}
-
-function classNames() {
-  const classes = [];
-  for (let i = 0; i < arguments.length; i++) {
-    const value = i < 0 || arguments.length <= i ? void 0 : arguments[i];
-    if (!value) continue;
-    if (isString(value)) {
-      classes.push(value);
-    } else if (isArray(value)) {
-      for (let i2 = 0; i2 < value.length; i2++) {
-        const inner = classNames(value[i2]);
-        if (inner) {
-          classes.push(inner);
-        }
-      }
-    } else if (isObject(value)) {
-      for (const name in value) {
-        if (value[name]) {
-          classes.push(name);
-        }
-      }
-    }
-  }
-  return classes.join(" ");
-}
 
 const LocaleReceiver = defineComponent({
   compatConfig: {
@@ -5691,198 +5691,6 @@ ConfigProvider.install = function(app) {
   app.component(ConfigProvider.name, ConfigProvider);
 };
 
-function createContext(defaultValue) {
-  const contextKey = Symbol("contextKey");
-  const useProvide = (props, newProps) => {
-    const mergedProps = reactive({});
-    provide(contextKey, mergedProps);
-    watchEffect(() => {
-      _extends(mergedProps, props, newProps || {});
-    });
-    return mergedProps;
-  };
-  const useInject = () => {
-    return inject(contextKey, defaultValue) || {};
-  };
-  return {
-    useProvide,
-    useInject
-  };
-}
-
-const genSpaceCompactStyle = (token) => {
-  const {
-    componentCls
-  } = token;
-  return {
-    [componentCls]: {
-      display: "inline-flex",
-      "&-block": {
-        display: "flex",
-        width: "100%"
-      },
-      "&-vertical": {
-        flexDirection: "column"
-      }
-    }
-  };
-};
-
-const genSpaceStyle = (token) => {
-  const {
-    componentCls
-  } = token;
-  return {
-    [componentCls]: {
-      display: "inline-flex",
-      "&-rtl": {
-        direction: "rtl"
-      },
-      "&-vertical": {
-        flexDirection: "column"
-      },
-      "&-align": {
-        flexDirection: "column",
-        "&-center": {
-          alignItems: "center"
-        },
-        "&-start": {
-          alignItems: "flex-start"
-        },
-        "&-end": {
-          alignItems: "flex-end"
-        },
-        "&-baseline": {
-          alignItems: "baseline"
-        }
-      },
-      [`${componentCls}-item`]: {
-        "&:empty": {
-          display: "none"
-        }
-      }
-    }
-  };
-};
-const useStyle$4 = genComponentStyleHook("Space", (token) => [genSpaceStyle(token), genSpaceCompactStyle(token)]);
-
-const spaceCompactItemProps = () => ({
-  compactSize: String,
-  compactDirection: PropTypes.oneOf(tuple$1("horizontal", "vertical")).def("horizontal"),
-  isFirstItem: booleanType(),
-  isLastItem: booleanType()
-});
-const SpaceCompactItemContext = createContext(null);
-const useCompactItemContext = (prefixCls, direction) => {
-  const compactItemContext = SpaceCompactItemContext.useInject();
-  const compactItemClassnames = computed(() => {
-    if (!compactItemContext || isEmpty(compactItemContext)) return "";
-    const {
-      compactDirection,
-      isFirstItem,
-      isLastItem
-    } = compactItemContext;
-    const separator = compactDirection === "vertical" ? "-vertical-" : "-";
-    return classNames({
-      [`${prefixCls.value}-compact${separator}item`]: true,
-      [`${prefixCls.value}-compact${separator}first-item`]: isFirstItem,
-      [`${prefixCls.value}-compact${separator}last-item`]: isLastItem,
-      [`${prefixCls.value}-compact${separator}item-rtl`]: direction.value === "rtl"
-    });
-  });
-  return {
-    compactSize: computed(() => compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.compactSize),
-    compactDirection: computed(() => compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.compactDirection),
-    compactItemClassnames
-  };
-};
-defineComponent({
-  name: "NoCompactStyle",
-  setup(_, _ref) {
-    let {
-      slots
-    } = _ref;
-    SpaceCompactItemContext.useProvide(null);
-    return () => {
-      var _a;
-      return (_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots);
-    };
-  }
-});
-const spaceCompactProps = () => ({
-  prefixCls: String,
-  size: {
-    type: String
-  },
-  direction: PropTypes.oneOf(tuple$1("horizontal", "vertical")).def("horizontal"),
-  align: PropTypes.oneOf(tuple$1("start", "end", "center", "baseline")),
-  block: {
-    type: Boolean,
-    default: void 0
-  }
-});
-const CompactItem = defineComponent({
-  name: "CompactItem",
-  props: spaceCompactItemProps(),
-  setup(props, _ref2) {
-    let {
-      slots
-    } = _ref2;
-    SpaceCompactItemContext.useProvide(props);
-    return () => {
-      var _a;
-      return (_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots);
-    };
-  }
-});
-const Compact = defineComponent({
-  name: "ASpaceCompact",
-  inheritAttrs: false,
-  props: spaceCompactProps(),
-  setup(props, _ref3) {
-    let {
-      attrs,
-      slots
-    } = _ref3;
-    const {
-      prefixCls,
-      direction: directionConfig
-    } = useConfigInject("space-compact", props);
-    const compactItemContext = SpaceCompactItemContext.useInject();
-    const [wrapSSR, hashId] = useStyle$4(prefixCls);
-    const clx = computed(() => {
-      return classNames(prefixCls.value, hashId.value, {
-        [`${prefixCls.value}-rtl`]: directionConfig.value === "rtl",
-        [`${prefixCls.value}-block`]: props.block,
-        [`${prefixCls.value}-vertical`]: props.direction === "vertical"
-      });
-    });
-    return () => {
-      var _a;
-      const childNodes = flattenChildren(((_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots)) || []);
-      if (childNodes.length === 0) {
-        return null;
-      }
-      return wrapSSR(createVNode("div", _objectSpread$g(_objectSpread$g({}, attrs), {}, {
-        "class": [clx.value, attrs.class]
-      }), [childNodes.map((child, i) => {
-        var _a2;
-        const key = child && child.key || `${prefixCls.value}-item-${i}`;
-        const noCompactItemContext = !compactItemContext || isEmpty(compactItemContext);
-        return createVNode(CompactItem, {
-          "key": key,
-          "compactSize": (_a2 = props.size) !== null && _a2 !== void 0 ? _a2 : "middle",
-          "compactDirection": props.direction,
-          "isFirstItem": i === 0 && (noCompactItemContext || (compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.isFirstItem)),
-          "isLastItem": i === childNodes.length - 1 && (noCompactItemContext || (compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.isLastItem))
-        }, {
-          default: () => [child]
-        });
-      })]));
-    };
-  }
-});
-
 const weekday = (function (o, c) {
   var proto = c.prototype;
 
@@ -6777,7 +6585,7 @@ const genWaveStyle = (token) => {
     }
   };
 };
-const useStyle$3 = genComponentStyleHook("Wave", (token) => [genWaveStyle(token)]);
+const useStyle$4 = genComponentStyleHook("Wave", (token) => [genWaveStyle(token)]);
 
 function useState(defaultStateValue) {
   const initValue = typeof defaultStateValue === "function" ? defaultStateValue() : defaultStateValue;
@@ -6898,7 +6706,7 @@ const Wave = defineComponent({
       prefixCls,
       wave
     } = useConfigInject("wave", props);
-    const [, hashId] = useStyle$3(prefixCls);
+    const [, hashId] = useStyle$4(prefixCls);
     useWave(computed(() => classNames(prefixCls.value, hashId.value)), wave);
     return () => {
       var _a;
@@ -7514,7 +7322,7 @@ const genBlockButtonStyle = (token) => {
     }
   };
 };
-const useStyle$2 = genComponentStyleHook("Button", (token) => {
+const useStyle$3 = genComponentStyleHook("Button", (token) => {
   const {
     controlTmpOutline,
     paddingContentHorizontal
@@ -7543,6 +7351,25 @@ const useStyle$2 = genComponentStyleHook("Button", (token) => {
     genCompactItemVerticalStyle(token)
   ];
 });
+
+function createContext(defaultValue) {
+  const contextKey = Symbol("contextKey");
+  const useProvide = (props, newProps) => {
+    const mergedProps = reactive({});
+    provide(contextKey, mergedProps);
+    watchEffect(() => {
+      _extends(mergedProps, props, newProps || {});
+    });
+    return mergedProps;
+  };
+  const useInject = () => {
+    return inject(contextKey, defaultValue) || {};
+  };
+  return {
+    useProvide,
+    useInject
+  };
+}
 
 const buttonGroupProps = () => ({
   prefixCls: String,
@@ -7603,6 +7430,179 @@ defineComponent({
   }
 });
 
+const genSpaceCompactStyle = (token) => {
+  const {
+    componentCls
+  } = token;
+  return {
+    [componentCls]: {
+      display: "inline-flex",
+      "&-block": {
+        display: "flex",
+        width: "100%"
+      },
+      "&-vertical": {
+        flexDirection: "column"
+      }
+    }
+  };
+};
+
+const genSpaceStyle = (token) => {
+  const {
+    componentCls
+  } = token;
+  return {
+    [componentCls]: {
+      display: "inline-flex",
+      "&-rtl": {
+        direction: "rtl"
+      },
+      "&-vertical": {
+        flexDirection: "column"
+      },
+      "&-align": {
+        flexDirection: "column",
+        "&-center": {
+          alignItems: "center"
+        },
+        "&-start": {
+          alignItems: "flex-start"
+        },
+        "&-end": {
+          alignItems: "flex-end"
+        },
+        "&-baseline": {
+          alignItems: "baseline"
+        }
+      },
+      [`${componentCls}-item`]: {
+        "&:empty": {
+          display: "none"
+        }
+      }
+    }
+  };
+};
+const useStyle$2 = genComponentStyleHook("Space", (token) => [genSpaceStyle(token), genSpaceCompactStyle(token)]);
+
+const spaceCompactItemProps = () => ({
+  compactSize: String,
+  compactDirection: PropTypes.oneOf(tuple$1("horizontal", "vertical")).def("horizontal"),
+  isFirstItem: booleanType(),
+  isLastItem: booleanType()
+});
+const SpaceCompactItemContext = createContext(null);
+const useCompactItemContext = (prefixCls, direction) => {
+  const compactItemContext = SpaceCompactItemContext.useInject();
+  const compactItemClassnames = computed(() => {
+    if (!compactItemContext || isEmpty(compactItemContext)) return "";
+    const {
+      compactDirection,
+      isFirstItem,
+      isLastItem
+    } = compactItemContext;
+    const separator = compactDirection === "vertical" ? "-vertical-" : "-";
+    return classNames({
+      [`${prefixCls.value}-compact${separator}item`]: true,
+      [`${prefixCls.value}-compact${separator}first-item`]: isFirstItem,
+      [`${prefixCls.value}-compact${separator}last-item`]: isLastItem,
+      [`${prefixCls.value}-compact${separator}item-rtl`]: direction.value === "rtl"
+    });
+  });
+  return {
+    compactSize: computed(() => compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.compactSize),
+    compactDirection: computed(() => compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.compactDirection),
+    compactItemClassnames
+  };
+};
+defineComponent({
+  name: "NoCompactStyle",
+  setup(_, _ref) {
+    let {
+      slots
+    } = _ref;
+    SpaceCompactItemContext.useProvide(null);
+    return () => {
+      var _a;
+      return (_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots);
+    };
+  }
+});
+const spaceCompactProps = () => ({
+  prefixCls: String,
+  size: {
+    type: String
+  },
+  direction: PropTypes.oneOf(tuple$1("horizontal", "vertical")).def("horizontal"),
+  align: PropTypes.oneOf(tuple$1("start", "end", "center", "baseline")),
+  block: {
+    type: Boolean,
+    default: void 0
+  }
+});
+const CompactItem = defineComponent({
+  name: "CompactItem",
+  props: spaceCompactItemProps(),
+  setup(props, _ref2) {
+    let {
+      slots
+    } = _ref2;
+    SpaceCompactItemContext.useProvide(props);
+    return () => {
+      var _a;
+      return (_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots);
+    };
+  }
+});
+const Compact = defineComponent({
+  name: "ASpaceCompact",
+  inheritAttrs: false,
+  props: spaceCompactProps(),
+  setup(props, _ref3) {
+    let {
+      attrs,
+      slots
+    } = _ref3;
+    const {
+      prefixCls,
+      direction: directionConfig
+    } = useConfigInject("space-compact", props);
+    const compactItemContext = SpaceCompactItemContext.useInject();
+    const [wrapSSR, hashId] = useStyle$2(prefixCls);
+    const clx = computed(() => {
+      return classNames(prefixCls.value, hashId.value, {
+        [`${prefixCls.value}-rtl`]: directionConfig.value === "rtl",
+        [`${prefixCls.value}-block`]: props.block,
+        [`${prefixCls.value}-vertical`]: props.direction === "vertical"
+      });
+    });
+    return () => {
+      var _a;
+      const childNodes = flattenChildren(((_a = slots.default) === null || _a === void 0 ? void 0 : _a.call(slots)) || []);
+      if (childNodes.length === 0) {
+        return null;
+      }
+      return wrapSSR(createVNode("div", _objectSpread$g(_objectSpread$g({}, attrs), {}, {
+        "class": [clx.value, attrs.class]
+      }), [childNodes.map((child, i) => {
+        var _a2;
+        const key = child && child.key || `${prefixCls.value}-item-${i}`;
+        const noCompactItemContext = !compactItemContext || isEmpty(compactItemContext);
+        return createVNode(CompactItem, {
+          "key": key,
+          "compactSize": (_a2 = props.size) !== null && _a2 !== void 0 ? _a2 : "middle",
+          "compactDirection": props.direction,
+          "isFirstItem": i === 0 && (noCompactItemContext || (compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.isFirstItem)),
+          "isLastItem": i === childNodes.length - 1 && (noCompactItemContext || (compactItemContext === null || compactItemContext === void 0 ? void 0 : compactItemContext.isLastItem))
+        }, {
+          default: () => [child]
+        });
+      })]));
+    };
+  }
+});
+
 const initDefaultProps = (types, defaultProps) => {
   const propTypes = _extends({}, types);
   Object.keys(defaultProps).forEach((k) => {
@@ -7655,7 +7655,7 @@ const Button = defineComponent({
       direction,
       size
     } = useConfigInject("btn", props);
-    const [wrapSSR, hashId] = useStyle$2(prefixCls);
+    const [wrapSSR, hashId] = useStyle$3(prefixCls);
     const groupSizeContext = GroupSizeContext.useInject();
     const disabledContext = useInjectDisabled();
     const mergedDisabled = computed(() => {
@@ -16507,5 +16507,5 @@ const DatePicker$1 = _extends(DatePicker, {
   }
 });
 
-export { Button as B, Compact as C, DatePicker$1 as D, PropTypes as P, useStyle$4 as a, booleanType as b, classNames as c, useInjectFormItemContext as d, devWarning as e, filterEmpty as f, generatePicker as g, commonProps as h, datePickerProps as i, generateConfig as j, localeValues$1 as k, localeValues as l, ConfigProvider as m, api$1 as n, omit as o, api as p, rangePickerProps as r, stringType as s, tuple$1 as t, useConfigInject as u };
+export { Button as B, ConfigProvider as C, DatePicker$1 as D, PropTypes as P, useStyle$2 as a, booleanType as b, classNames as c, Compact as d, localeValues as e, filterEmpty as f, api$1 as g, api as h, generatePicker as i, useInjectFormItemContext as j, devWarning as k, localeValues$1 as l, commonProps as m, datePickerProps as n, omit as o, generateConfig as p, rangePickerProps as r, stringType as s, tuple$1 as t, useConfigInject as u };
 //# sourceMappingURL=dayjs.mjs.map

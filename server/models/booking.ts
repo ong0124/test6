@@ -1,9 +1,10 @@
 import { sql } from "../db/db";
+import dayjs from 'dayjs';
 
 export type BookingModel = {
     id: number;
     trip_type: string;
-    user_id: number;
+    LineID: number;
     adult_num: number;
     child_num: number;
     contact_phone: number;
@@ -24,27 +25,32 @@ export type BookingModel = {
     shuttle_time: string; 
     return_shuttle_date: string; 
     return_shuttle_time: string; 
-    status : string;
+    status?: string;
     total_tickets?: number;
     payment_status?: string;
 }
 
 
-export const read = async (sortBy: string = 'departure_loc') => {
+export const read = async (
+  sortBy: string = 'departure_loc',
+  date: string = dayjs().format('YYYY-MM-DD')
+) => {
+  console.log('📅 傳入 SQL 的 date:', date);
   const result = await sql({
-    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID ORDER BY b.status ASC, b.\`${sortBy}\` ASC`
+    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID WHERE b.shuttle_date = ? ORDER BY b.status ASC, b.\`${sortBy}\` ASC`,
+    values: [date]
   });
 
   return result as BookingModel[];
 };
 
 
-export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel, 'id' | 'status'| 'total_tickets'>>)=>{
+export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel, 'id' | 'total_tickets'>>)=>{
     const result = (await sql({
         query:`
       INSERT INTO booking (
       trip_type,
-      user_id,
+      LineID,
       adult_num,
       child_num,
       contact_phone,
@@ -64,11 +70,12 @@ export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel,
       shuttle_date,
       shuttle_time,
       return_shuttle_date,
-      return_shuttle_time
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      return_shuttle_time,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   values: [ data.trip_type,
-    data.user_id,
+    data.LineID,
     data.adult_num,
     data.child_num,
     data.contact_phone,
@@ -88,15 +95,43 @@ export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel,
     data.shuttle_date,
     data.shuttle_time,
     data.return_shuttle_date,
-    data.return_shuttle_time]
+    data.return_shuttle_time,
+    data.status]
     })
     ) as any;
     console.log('Inserted result:', result);
      const insertedId = await sql({
         query: `SELECT LAST_INSERT_ID() AS id;`
-    });
+    }) as any;
 
-    return insertedId ? { id: insertedId } : null;
+  const bookingID = insertedId?.[0]?.id;
+
+  if (!bookingID) {
+    console.error('Booking insertion failed or ID not found.');
+    return null;
+  }
+  await sql({
+    query: `
+      INSERT IGNORE INTO payment (
+        booking_id,
+        payment_amount,
+        payment_method,
+        payment_status,
+        payment_time,
+        LineID
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    values: [
+      bookingID,
+      data.totalprice,      
+      '現金',             
+      data.payment_status,             
+      new Date(),           
+      data.LineID
+    ]
+  });
+
+  return { id: bookingID };
 };
 
 export const update = async (id: string, data: Pick<BookingModel, Exclude<keyof BookingModel, 'id' | 'status'| 'user_id' |'trip_type'|'arrivalpoint_date'|'arrivalpoint_time'|'flight_num'|'return_arrival_date'|'return_arrival_time'>>) => {

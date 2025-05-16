@@ -46,11 +46,10 @@ const props = defineProps({
   items: {
     type: Array,
     default: () => [
-      { label: '打印', action: 'print', icon: 'mdi:printer' },
-      { label: '刪除', action: 'delete', icon: 'mdi:delete' },
-      { label: '添加', action: 'add', icon: 'mdi:plus' },
-      { label: '按時間排序', action: 'timeAsc', icon: 'material-symbols-clock-arrow-up-outline' },
-      { label: '按發車地點排序', action: 'locAsc', icon: 'material-symbols-car-gear-outline' }
+      { label: '打印成PDF', action: 'print', icon: 'vscode-icons-file-type-pdf2' },
+      { label: '打印成EXCEL', action: 'excel', icon: 'vscode-icons-file-type-excel' },
+      { label: '刪除訂單', action: 'delete', icon: 'mdi:delete' },
+      { label: '添加訂單', action: 'add', icon: 'mdi:plus' },
     ]
   },
   position: {

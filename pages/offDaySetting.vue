@@ -42,25 +42,32 @@
           <div>創建人</div>
           <div>操作</div>
         </div>
-
-        <div
-          v-for="(item, index) in offDays"
-          :key="index"
-          class="grid grid-cols-[40px_4fr_4fr_2fr_80px] text-center py-2 border-b border-gray-300 items-center text-sm"
-        >
-          <div>{{ item.id }}</div>
-          <div class="">{{ formatDate(item.startOffDays) }}</div>
-          <div class="bg-gray-100">{{ formatDate(item.endOffDays) }}</div>
-          <div>{{ item.create_by }}</div>
-          <div>
-            <button
+        <template v-if="offDays.length > 0">
+          <div
+            v-for="(item, index) in offDays"
+            :key="index"
+            class="grid grid-cols-[40px_4fr_4fr_2fr_80px] text-center py-2 border-b border-gray-300 items-center text-sm"
+            >
+            <div>{{ item.id }}</div>
+            <div class="">{{ formatDate(item.startOffDays) }}</div>
+            <div class="bg-gray-100">{{ formatDate(item.endOffDays) }}</div>
+            <div>{{ item.create_by }}</div>
+            <div>
+              <button
               class="px-3 py-1 text-red-500 border font-medium border-red-500 hover:bg-red-500 hover:text-white rounded-sm"
               @click="deleteOffDay(item.id)"
-            >
+              >
               刪除
             </button>
+            </div>
           </div>
-        </div>
+        </template>  
+        <template v-else>
+          <div class="text-center text-gray-400 py-10">
+            <Icon name="ic:outline-event-busy" class="w-10 h-10 mx-auto mb-2" />
+            <p class="text-sm">還沒有設置任何休假</p>
+          </div>
+        </template>
 
       </div>
     </div>

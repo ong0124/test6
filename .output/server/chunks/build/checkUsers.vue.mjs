@@ -1,10 +1,10 @@
-import __nuxt_component_1 from './index2.mjs';
+import __nuxt_component_3 from './index2.mjs';
 import { _ as _sfc_main$3 } from './PopMenu.vue.mjs';
 import { f as formatDate } from './formatDate.mjs';
 import { defineComponent, reactive, watch, mergeProps, unref, withCtx, createVNode, ref, computed, nextTick, useSSRContext } from 'vue';
 import { ssrRenderAttrs, ssrInterpolate, ssrRenderAttr, ssrRenderComponent, ssrRenderList } from 'vue/server-renderer';
 import { d as dayjs, _ as _sfc_main$2, a as _sfc_main$4 } from '../_/index.mjs';
-import { m as ConfigProvider, k as localeValues, D as DatePicker$1 } from './dayjs.mjs';
+import { C as ConfigProvider, l as localeValues, D as DatePicker$1 } from './dayjs.mjs';
 import '@iconify/utils/lib/css/icon';
 import '@iconify/vue';
 import './server.mjs';
@@ -180,6 +180,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           (_a = popupRef.value) == null ? void 0 : _a.setFormData(item);
         });
       } else if (currentAction.value === "delete") {
+        const confirmDelete = confirm("你確定要刪除此用戶嗎？");
+        if (!confirmDelete) return;
         try {
           const response = await $fetch("/api/DeleteUser", {
             method: "DELETE",
@@ -197,7 +199,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _push, _parent, _attrs) => {
       const _component_Header = _sfc_main$2;
-      const _component_Icon = __nuxt_component_1;
+      const _component_Icon = __nuxt_component_3;
       const _component_PopMenu = _sfc_main$3;
       const _component_UserPopup = _sfc_main$1;
       const _component_BottomNavigator = _sfc_main$4;
