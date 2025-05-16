@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router';
 import { d as dayjs, _ as _sfc_main$1, a as _sfc_main$3 } from '../_/index.mjs';
 import { C as ConfigProvider, l as localeValues, D as DatePicker$1 } from './dayjs.mjs';
 import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import FileSaver from 'file-saver';
 import { e as useI18n } from './server.mjs';
 import { T as TimePicker$1 } from './dayjs2.mjs';
 import '@iconify/utils/lib/css/icon';
@@ -25,7 +25,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'unhead/server';
 import 'unhead/utils';
@@ -69,7 +68,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         t(`${order.destination_loc}`),
         formatDate(order.shuttle_date),
         order.shuttle_time,
-        order.status,
+        TranslateStatus(order.status),
         order.adult_num,
         order.child_num,
         order.totalTickets,
@@ -149,7 +148,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
-      saveAs(blob, `訂單報表_${DateSelected.value.format("YYYY-MM-DD")}.xlsx`);
+      FileSaver.saveAs(blob, `訂單報表_${DateSelected.value.format("YYYY-MM-DD")}.xlsx`);
     };
     const filteredOrders = computed(() => {
       const keyword = searchQuery.value.toLowerCase();

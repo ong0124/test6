@@ -160,7 +160,7 @@
   import zhTW from 'ant-design-vue/es/locale/zh_TW';
   import 'dayjs/locale/zh-tw';
   import ExcelJS from 'exceljs';
-  import { saveAs } from 'file-saver';
+  import FileSaver from 'file-saver';
   import type { Dayjs } from 'dayjs';
   
   const { t } = useI18n();
@@ -182,7 +182,7 @@ const getExportData = () => {
     t(`${order.destination_loc}`), 
     formatDate(order.shuttle_date),
     order.shuttle_time,
-    order.status,
+    TranslateStatus(order.status),
     order.adult_num,
     order.child_num,
     order.totalTickets,
@@ -288,7 +288,7 @@ const generateExcel = async () => {
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
-  saveAs(blob, `訂單報表_${DateSelected.value.format('YYYY-MM-DD')}.xlsx`);
+  FileSaver.saveAs(blob, `訂單報表_${DateSelected.value.format('YYYY-MM-DD')}.xlsx`);
 };
 
 
