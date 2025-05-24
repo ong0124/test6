@@ -50,6 +50,8 @@ const props = defineProps({
       { label: '打印成EXCEL', action: 'excel', icon: 'vscode-icons-file-type-excel' },
       { label: '刪除訂單', action: 'delete', icon: 'mdi:delete' },
       { label: '添加訂單', action: 'add', icon: 'mdi:plus' },
+      { label: '修改訂單', action: 'edit', icon: 'material-symbols-edit-note-outline' },
+
     ]
   },
   position: {

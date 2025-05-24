@@ -1,14 +1,13 @@
 import __nuxt_component_3 from './index2.mjs';
 import { _ as _sfc_main$2 } from './PopMenu.vue.mjs';
-import { f as formatDate } from './formatDate.mjs';
-import { defineComponent, ref, computed, watch, reactive, unref, withCtx, createVNode, useSSRContext } from 'vue';
-import { ssrRenderComponent, ssrRenderAttr, ssrRenderList, ssrInterpolate, ssrIncludeBooleanAttr, ssrLooseContain, ssrLooseEqual, ssrRenderClass } from 'vue/server-renderer';
-import { useRouter } from 'vue-router';
+import { defineComponent, ref, computed, watch, reactive, unref, withCtx, createVNode, nextTick, useSSRContext } from 'vue';
+import { ssrRenderComponent, ssrRenderAttr, ssrRenderClass, ssrRenderList, ssrInterpolate, ssrIncludeBooleanAttr, ssrLooseContain, ssrLooseEqual } from 'vue/server-renderer';
 import { d as dayjs, _ as _sfc_main$1, a as _sfc_main$3 } from '../_/index.mjs';
 import { C as ConfigProvider, l as localeValues, D as DatePicker$1 } from './dayjs.mjs';
 import ExcelJS from 'exceljs';
 import FileSaver from 'file-saver';
 import { e as useI18n } from './server.mjs';
+import { f as formatDate } from './formatDate.mjs';
 import { T as TimePicker$1 } from './dayjs2.mjs';
 import '@iconify/utils/lib/css/icon';
 import '@iconify/vue';
@@ -31,6 +30,7 @@ import 'unhead/utils';
 import 'devalue';
 import 'unhead/plugins';
 import '@vueuse/core';
+import 'vue-router';
 import '@babel/runtime/helpers/esm/extends';
 import '@babel/runtime/helpers/esm/objectSpread2';
 import '@ctrl/tinycolor';
@@ -55,7 +55,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   setup(__props) {
     const { t } = useI18n();
     const searchQuery = ref("");
-    useRouter();
     const DateSelected = ref(dayjs());
     const FileNameDate = DateSelected.value.format("YYYY年MM月DD日");
     const getExportData = () => {
@@ -64,10 +63,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         order.id,
         order.contact,
         order.phone,
-        t(`${order.departure_loc}`),
-        t(`${order.destination_loc}`),
-        formatDate(order.shuttle_date),
-        order.shuttle_time,
+        t(`${order.display_departure}`),
+        t(`${order.display_destination}`),
+        formatDate(order.display_date),
+        order.display_time,
         TranslateStatus(order.status),
         order.adult_num,
         order.child_num,
@@ -107,7 +106,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
     const generateExcel = async () => {
       const { headers, data: data2 } = getExportData();
-      const { utils, writeFile } = await import('../_/xlsx.mjs').then(function (n) { return n.x; });
       const workbook = new ExcelJS.Workbook();
       const fileName = `訂單詳情_${FileNameDate}.xlsx`;
       const sheet = workbook.addWorksheet(fileName);
@@ -177,37 +175,88 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       "text-black font-bold bg-green-400 px-4 py-1 rounded-2xl": status === "complete",
       "text-white font-bold bg-red-400 px-2 py-1 rounded-2xl": status === "notTraveled"
     });
-    const date = DateSelected.value.format("YYYY-MM-DD");
     const orders = ref([]);
     const data = ref([]);
-    const sortBy = ref("departure_loc");
-    const fetchData = async (sortField = "departure_loc") => {
+    const sortBy = ref("Booking.airport");
+    const airportOrders = ref([]);
+    const pierOrders = ref([]);
+    const fetchData = async () => {
       try {
         const result = await $fetch("/api/GETbooking", {
           query: {
-            // 使用 query 而不是 params
-            sortBy: sortField,
             date: DateSelected.value.format("YYYY-MM-DD")
           }
         });
-        console.log("📤 發送查詢:", { sortBy: sortField, date });
+        console.log("📤 發送查詢:", { date: DateSelected.value.format("YYYY-MM-DD") });
         data.value = result.data;
         console.log("🚚 抓回的 data:", data.value);
-        orders.value = data.value.map((booking) => ({
-          id: booking.id,
-          departure_loc: booking.departure_loc,
-          destination_loc: booking.destination_loc,
-          shuttle_date: booking.shuttle_date,
-          shuttle_time: booking.shuttle_time,
-          status: booking.status,
-          adult_num: booking.adult_num,
-          child_num: booking.child_num,
-          totalTickets: booking.total_tickets,
-          totalprice: booking.totalprice,
-          contact: booking.contact_name,
-          phone: booking.contact_phone,
-          payment_status: booking.payment_status
-        }));
+        const airport = [];
+        const pier = [];
+        const Grouporders = data.value.flatMap((booking) => {
+          const isRoundTrip = booking.trip_type === "roundTrip";
+          const isShuttleToday = dayjs(booking.shuttle_date).isSame(DateSelected.value, "day");
+          const isReturnToday = dayjs(booking.return_shuttle_date).isSame(DateSelected.value, "day");
+          const orders2 = [];
+          if (isShuttleToday) {
+            const goOrder = {
+              segment: "go",
+              id: booking.id,
+              trip_type: booking.trip_type,
+              display_departure: booking.departure_loc,
+              display_destination: booking.destination_loc,
+              display_date: formatDate(booking.shuttle_date),
+              display_time: booking.shuttle_time,
+              contact: booking.contact_name,
+              totalTickets: booking.total_tickets,
+              totalprice: booking.totalprice,
+              status: booking.status,
+              adult_num: booking.adult_num,
+              child_num: booking.child_num,
+              payment_status: booking.payment_status,
+              phone: booking.contact_phone
+            };
+            orders2.push(goOrder);
+            if (booking.departure_loc === "Booking.airport") {
+              airport.push(goOrder);
+            } else if (booking.departure_loc === "Booking.pier") {
+              pier.push(goOrder);
+            }
+          }
+          if (isRoundTrip && isReturnToday) {
+            const returnOrder = {
+              segment: "return",
+              id: booking.id,
+              trip_type: booking.trip_type,
+              display_departure: booking.return_departure,
+              display_destination: booking.return_destination,
+              display_date: formatDate(booking.return_shuttle_date),
+              display_time: booking.return_shuttle_time,
+              contact: booking.contact_name,
+              totalTickets: booking.total_tickets,
+              totalprice: booking.totalprice,
+              status: booking.status,
+              adult_num: booking.adult_num,
+              child_num: booking.child_num,
+              payment_status: booking.payment_status,
+              phone: booking.contact_phone
+            };
+            orders2.push(returnOrder);
+            if (booking.return_departure === "Booking.airport") {
+              airport.push(returnOrder);
+            } else if (booking.return_departure === "Booking.pier") {
+              pier.push(returnOrder);
+            }
+          }
+          return orders2;
+        });
+        const sortByTime = (a, b) => {
+          if (a.display_time < b.display_time) return -1;
+          if (a.display_time > b.display_time) return 1;
+          return 0;
+        };
+        airportOrders.value = airport.sort(sortByTime);
+        pierOrders.value = pier.sort(sortByTime);
+        orders.value = sortBy.value === "Booking.airport" ? airportOrders.value : pierOrders.value;
       } catch (error) {
         console.error("Fetch error:", error);
         alert("網絡卡頓，無法獲取數據，請重新進入網站");
@@ -215,11 +264,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
     watch(DateSelected, () => {
       console.log("選擇日期:", DateSelected);
-      fetchData(sortBy.value);
+      fetchData();
     });
     const scrollContainer = ref(null);
     const showDeleteColumn = ref(false);
     const showAddRow = ref(false);
+    const isEditing = ref(false);
     const handleItemSelected = async (action) => {
       console.log("選擇的動作:", action);
       if (action === "print") {
@@ -227,15 +277,25 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       } else if (action === "excel") {
         generateExcel();
       } else if (action === "delete") {
+        showAddRow.value = false;
+        isEditing.value = false;
         showDeleteColumn.value = true;
-        if (scrollContainer.value) {
-          scrollContainer.value.scrollTo({
-            left: scrollContainer.value.scrollWidth,
-            behavior: "smooth"
-          });
-        }
+        nextTick(() => {
+          if (scrollContainer.value) {
+            scrollContainer.value.scrollTo({
+              left: scrollContainer.value.scrollWidth,
+              behavior: "smooth"
+            });
+          }
+        });
       } else if (action === "add") {
         showAddRow.value = true;
+        isEditing.value = false;
+        showDeleteColumn.value = false;
+      } else if (action === "edit") {
+        isEditing.value = true;
+        showDeleteColumn.value = false;
+        showAddRow.value = false;
       }
     };
     const newOrder = reactive({
@@ -301,35 +361,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }),
         _: 1
       }, _parent));
-      _push(`</div><div class="flex flex-col ml-2 mb-16"><div class="overflow-x-auto pb-4"><table class="table-fixed min-w-full mr-12"><thead><tr class="bg-gray-100"><th class="p-4 text-sm md:text-lg sticky left-0 bg-indigo-200 whitespace-nowrap">訂單ID</th><!--[-->`);
+      _push(`</div><div class="flex my-2 ml-8 items-center"><p>上車地點：</p><div class="flex flex-1 justify-around"><button class="${ssrRenderClass([sortBy.value === "Booking.airport" ? "bg-amber-500 text-white border-white" : "border-gray-500", "border-2 border-gray-500 rounded-xl py-1 px-4"])}"> 尚義機場 </button><button class="${ssrRenderClass([sortBy.value === "Booking.pier" ? "bg-amber-500 text-white border-white" : "border-gray-500", "border-2 border-gray-500 rounded-xl py-1 px-4"])}"> 水頭碼頭 </button></div></div><div class="flex flex-col ml-2 mb-16"><div class="overflow-x-auto pb-4"><table class="table-fixed min-w-full mr-12"><thead><tr class="bg-gray-100"><th class="p-4 text-sm md:text-lg sticky left-0 bg-indigo-200 whitespace-nowrap">訂單ID</th><!--[-->`);
       ssrRenderList(tableHeaders.slice(1), (header, index) => {
-        _push(`<th class="p-4 text-sm md:text-sm bg-indigo-100 whitespace-nowrap"><span class="inline-flex items-center gap-1">${ssrInterpolate(header)} `);
-        if (header === "時間") {
-          _push(ssrRenderComponent(_component_Icon, {
-            name: sortBy.value === "shuttle_time" ? "mdi:arrow-up" : "mdi:arrow-down",
-            class: [
-              "w-5 h-5 transition-colors duration-200",
-              sortBy.value === "shuttle_time" ? "text-gray-600" : "text-amber-500"
-            ]
-          }, null, _parent));
-        } else {
-          _push(`<!---->`);
-        }
-        if (header === "上車地點") {
-          _push(ssrRenderComponent(_component_Icon, {
-            name: sortBy.value === "departure_loc" ? "mdi:arrow-up" : "mdi:arrow-down",
-            class: [
-              "w-5 h-5 transition-colors duration-200",
-              sortBy.value === "departure_loc" ? "text-gray-600" : "text-amber-500"
-            ]
-          }, null, _parent));
-        } else {
-          _push(`<!---->`);
-        }
-        _push(`</span></th>`);
+        _push(`<th class="p-4 text-sm md:text-sm bg-indigo-100 whitespace-nowrap">${ssrInterpolate(header)}</th>`);
       });
       _push(`<!--]-->`);
-      if (showDeleteColumn.value || showAddRow.value) {
+      if (showDeleteColumn.value || showAddRow.value || isEditing.value) {
         _push(`<th class="whitespace-nowrap p-2 px-4 text-sm md:text-sm bg-indigo-100"> 操作 </th>`);
       } else {
         _push(`<!---->`);
@@ -388,7 +425,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           }),
           _: 1
         }, _parent));
-        _push(`</td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="notTraveled"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).status) ? ssrLooseContain(unref(newOrder).status, "notTraveled") : ssrLooseEqual(unref(newOrder).status, "notTraveled")) ? " selected" : ""}>未出行</option><option value="complete"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).status) ? ssrLooseContain(unref(newOrder).status, "complete") : ssrLooseEqual(unref(newOrder).status, "complete")) ? " selected" : ""}>完成</option></select></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).adult_num)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).child_num)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2">${ssrInterpolate(unref(newOrder).adult_num + unref(newOrder).child_num)}</td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="已付款"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).payment_status) ? ssrLooseContain(unref(newOrder).payment_status, "已付款") : ssrLooseEqual(unref(newOrder).payment_status, "已付款")) ? " selected" : ""}>已付款</option><option value="未付款"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).payment_status) ? ssrLooseContain(unref(newOrder).payment_status, "未付款") : ssrLooseEqual(unref(newOrder).payment_status, "未付款")) ? " selected" : ""}>未付款</option></select></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).totalprice)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2 px-2 whitespace-nowrap"><button class="text-white font-bold bg-red-500 px-4 py-1 rounded-lg"> 確認 </button></td></tr>`);
+        _push(`</td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="notTraveled"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).status) ? ssrLooseContain(unref(newOrder).status, "notTraveled") : ssrLooseEqual(unref(newOrder).status, "notTraveled")) ? " selected" : ""}>未出行</option><option value="complete"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).status) ? ssrLooseContain(unref(newOrder).status, "complete") : ssrLooseEqual(unref(newOrder).status, "complete")) ? " selected" : ""}>完成</option></select></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).adult_num)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).child_num)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2">${ssrInterpolate(unref(newOrder).adult_num + unref(newOrder).child_num)}</td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="已付款"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).payment_status) ? ssrLooseContain(unref(newOrder).payment_status, "已付款") : ssrLooseEqual(unref(newOrder).payment_status, "已付款")) ? " selected" : ""}>已付款</option><option value="未付款"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).payment_status) ? ssrLooseContain(unref(newOrder).payment_status, "未付款") : ssrLooseEqual(unref(newOrder).payment_status, "未付款")) ? " selected" : ""}>未付款</option></select></td><td class="border p-2"><input type="number"${ssrRenderAttr("value", unref(newOrder).totalprice)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2 px-2 whitespace-nowrap"><button class="text-white font-bold bg-red-500 px-4 py-1 rounded-lg"> 確認 </button><button class="text-gray-500 px-4 py-1 rounded">`);
+        _push(ssrRenderComponent(_component_Icon, {
+          name: "material-symbols-close-rounded",
+          class: "text-gray-500 w-5 h-5"
+        }, null, _parent));
+        _push(`</button></td></tr>`);
       } else {
         _push(`<!---->`);
       }
@@ -399,20 +441,133 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       _push(`<!--[-->`);
       ssrRenderList(unref(filteredOrders), (order, index) => {
-        _push(`<tr class="text-center odd:bg-white even:bg-gray-50"><td class="${ssrRenderClass([index % 2 === 0 ? "bg-sky-50 " : "bg-gray-100", "border-b p-2 whitespace-nowrap text-sm md:text-md sticky left-0 z-10"])}">${ssrInterpolate(order.id)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.contact)}</td><td class="border-b py-4 px-12 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.phone)}</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(unref(t)(`${order.departure_loc}`))}</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(unref(t)(`${order.destination_loc}`))}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(("formatDate" in _ctx ? _ctx.formatDate : unref(formatDate))(order.shuttle_date))}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.shuttle_time)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg"><span class="${ssrRenderClass(statusClass(order.status))}">${ssrInterpolate(("TranslateStatus" in _ctx ? _ctx.TranslateStatus : unref(TranslateStatus))(order.status))}</span></td><td class="border-b py-4 px-2 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.adult_num)}</td><td class="border-b py-4 px-2 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.child_num)}</td><td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.totalTickets)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.payment_status)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.totalprice)}</td>`);
-        if (showDeleteColumn.value) {
-          _push(`<th class="border-b">`);
-          if (showDeleteColumn.value && !showAddRow.value) {
+        _push(`<tr class="text-center odd:bg-white even:bg-gray-50"><td class="${ssrRenderClass([index % 2 === 0 ? "bg-sky-50 " : "bg-gray-100", "border-b p-2 whitespace-nowrap text-sm md:text-md sticky left-0 z-10"])}">${ssrInterpolate(order.id)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<input${ssrRenderAttr("value", order.contact)} class="border rounded p-1 text-sm">`);
+        } else {
+          _push(`<!--[-->${ssrInterpolate(order.contact)}<!--]-->`);
+        }
+        _push(`</td><td class="border-b py-4 px-12 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<input${ssrRenderAttr("value", order.phone)} class="border rounded p-1 text-sm">`);
+        } else {
+          _push(`<!--[-->${ssrInterpolate(order.phone)}<!--]-->`);
+        }
+        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.pier") : ssrLooseEqual(order.departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.airport") : ssrLooseEqual(order.departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+        } else {
+          _push(`<span>${ssrInterpolate(unref(t)(order.display_departure))}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.pier") : ssrLooseEqual(order.destination_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.airport") : ssrLooseEqual(order.destination_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+        } else {
+          _push(`<span>${ssrInterpolate(unref(t)(order.display_destination))}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+            default: withCtx((_, _push2, _parent2, _scopeId) => {
+              if (_push2) {
+                _push2(ssrRenderComponent(_component_a_date_picker, {
+                  value: order.shuttle_date,
+                  "onUpdate:value": ($event) => order.shuttle_date = $event,
+                  inputReadOnly: true,
+                  valueFormat: "YYYY-MM-DD"
+                }, null, _parent2, _scopeId));
+              } else {
+                return [
+                  createVNode(_component_a_date_picker, {
+                    value: order.shuttle_date,
+                    "onUpdate:value": ($event) => order.shuttle_date = $event,
+                    inputReadOnly: true,
+                    valueFormat: "YYYY-MM-DD"
+                  }, null, 8, ["value", "onUpdate:value"])
+                ];
+              }
+            }),
+            _: 2
+          }, _parent));
+        } else {
+          _push(`<span>${ssrInterpolate(order.display_date)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+            default: withCtx((_, _push2, _parent2, _scopeId) => {
+              if (_push2) {
+                _push2(ssrRenderComponent(_component_a_time_picker, {
+                  value: order.shuttle_time,
+                  "onUpdate:value": ($event) => order.shuttle_time = $event,
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, _parent2, _scopeId));
+              } else {
+                return [
+                  createVNode(_component_a_time_picker, {
+                    value: order.shuttle_time,
+                    "onUpdate:value": ($event) => order.shuttle_time = $event,
+                    inputReadOnly: true,
+                    format: "HH:mm"
+                  }, null, 8, ["value", "onUpdate:value"])
+                ];
+              }
+            }),
+            _: 2
+          }, _parent));
+        } else {
+          _push(`<span>${ssrInterpolate(order.display_time)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<select class="border rounded p-1 text-sm"><option value="notTraveled"${ssrIncludeBooleanAttr(Array.isArray(order.status) ? ssrLooseContain(order.status, "notTraveled") : ssrLooseEqual(order.status, "notTraveled")) ? " selected" : ""}>未出行</option><option value="complete"${ssrIncludeBooleanAttr(Array.isArray(order.status) ? ssrLooseContain(order.status, "complete") : ssrLooseEqual(order.status, "complete")) ? " selected" : ""}>完成</option></select>`);
+        } else {
+          _push(`<span class="${ssrRenderClass(statusClass(order.status))}">${ssrInterpolate(("TranslateStatus" in _ctx ? _ctx.TranslateStatus : unref(TranslateStatus))(order.status))}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-2 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<input type="number"${ssrRenderAttr("value", order.adult_num)} class="border rounded p-1 text-sm">`);
+        } else {
+          _push(`<span>${ssrInterpolate(order.adult_num)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-2 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<input type="number"${ssrRenderAttr("value", order.child_num)} class="border rounded p-1 text-sm">`);
+        } else {
+          _push(`<span>${ssrInterpolate(order.child_num)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.totalTickets)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<select class="border rounded p-1 text-sm"><option value="已付款"${ssrIncludeBooleanAttr(Array.isArray(order.payment_status) ? ssrLooseContain(order.payment_status, "已付款") : ssrLooseEqual(order.payment_status, "已付款")) ? " selected" : ""}>已付款</option><option value="未付款"${ssrIncludeBooleanAttr(Array.isArray(order.payment_status) ? ssrLooseContain(order.payment_status, "未付款") : ssrLooseEqual(order.payment_status, "未付款")) ? " selected" : ""}>未付款</option></select>`);
+        } else {
+          _push(`<span>${ssrInterpolate(order.payment_status)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<input type="number"${ssrRenderAttr("value", order.totalprice)} class="border rounded p-1 text-sm">`);
+        } else {
+          _push(`<span>${ssrInterpolate(order.totalprice)}</span>`);
+        }
+        _push(`</td>`);
+        if ((showDeleteColumn.value || isEditing.value) && !showAddRow.value) {
+          _push(`<th class="border-b whitespace-nowrap">`);
+          if (isEditing.value) {
+            _push(`<button class="text-white font-bold bg-red-500 px-4 py-1 rounded-lg"> 確認 </button>`);
+          } else {
             _push(`<button class="text-red-500 px-4 py-1 rounded">`);
             _push(ssrRenderComponent(_component_Icon, {
               name: "mdi:delete",
               class: "text-red-500 w-5 h-5"
             }, null, _parent));
             _push(`</button>`);
-          } else {
-            _push(`<!---->`);
           }
-          _push(`</th>`);
+          _push(`<button class="text-gray-500 px-4 py-1 rounded">`);
+          _push(ssrRenderComponent(_component_Icon, {
+            name: "material-symbols-close-rounded",
+            class: "text-gray-500 w-5 h-5"
+          }, null, _parent));
+          _push(`</button></th>`);
         } else {
           _push(`<!---->`);
         }

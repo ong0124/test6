@@ -67,7 +67,7 @@ const detail$1 = async (id) => {
   });
   return result.length === 1 ? result[0] : null;
 };
-const update$3 = async (id, data) => {
+const update$5 = async (id, data) => {
   await sql({
     query: `
       UPDATE users
@@ -143,13 +143,13 @@ const detail = async (evt) => {
     });
   }
 };
-const update$2 = async (evt) => {
+const update$4 = async (evt) => {
   try {
     const body = await readBody(evt);
     if (!body.id) {
       throw createError({ statusCode: 400, statusMessage: "Missing user ID" });
     }
-    const result = await update$3(body.id, {
+    const result = await update$5(body.id, {
       full_name: body.full_name,
       birthday: body.birthday
     });
@@ -185,11 +185,24 @@ const remove$4 = async (evt) => {
   }
 };
 
-const read$3 = async (sortBy = "departure_loc", date = dayjs().format("YYYY-MM-DD")) => {
-  console.log("\u{1F4C5} \u50B3\u5165 SQL \u7684 date:", date);
+const read$3 = async (date = dayjs().format("YYYY-MM-DD")) => {
   const result = await sql({
-    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID WHERE b.shuttle_date = ? ORDER BY b.status ASC, b.\`${sortBy}\` ASC`,
-    values: [date]
+    query: `SELECT 
+    b.*,
+    p.payment_status,
+    (b.adult_num + b.child_num) AS total_tickets 
+    FROM 
+    booking b 
+    JOIN 
+    payment p ON p.booking_id = b.id AND p.LineID = b.LineID 
+    WHERE 
+    b.shuttle_date = ?
+    OR
+    b.return_shuttle_date = ?
+    ORDER BY 
+    b.shuttle_time ASC,
+    b.return_shuttle_time ASC`,
+    values: [date, date]
   });
   return result;
 };
@@ -280,6 +293,55 @@ const create$3 = async (data) => {
   });
   return { id: bookingID };
 };
+const update$3 = async (id, data) => {
+  await sql({
+    query: `
+      UPDATE booking
+      SET
+        adult_num = ?,
+        child_num = ?,
+        contact_phone = ?,
+        totalprice = ?,
+        contact_name = ?,
+        departure_loc = ?,
+        destination_loc = ?,
+        return_departure = ?,
+        return_destination = ?,
+        shuttle_date = ?,
+        shuttle_time = ?,
+        return_shuttle_date = ?,
+        return_shuttle_time = ?,
+        status = ?
+      WHERE id = ?
+    `,
+    values: [
+      data.adult_num,
+      data.child_num,
+      data.contact_phone,
+      data.totalprice,
+      data.contact_name,
+      data.departure_loc,
+      data.destination_loc,
+      data.return_departure,
+      data.return_destination,
+      data.shuttle_date,
+      data.shuttle_time,
+      data.return_shuttle_date,
+      data.return_shuttle_time,
+      data.status,
+      id
+    ]
+  });
+  await sql({
+    query: `
+      UPDATE payment
+      SET payment_status = ?
+      WHERE booking_id = ?
+    `,
+    values: [data.payment_status, id]
+  });
+  return await FindBookingDetailById$1(id);
+};
 const FindBookingDetailById$1 = async (id) => {
   const result = await sql({
     query: "SELECT * from booking WHERE id = ?",
@@ -312,11 +374,9 @@ const remove$3 = async (id) => {
 
 const read$2 = async (event) => {
   const query = getQuery(event);
-  const sortBy = query.sortBy || "departure_loc";
   const date = query.date || dayjs().format("YYYY-MM-DD");
-  console.log("\u{1F6EC} \u5F8C\u7AEF\u6536\u5230\u67E5\u8A62:", { sortBy, date });
   try {
-    const result = await read$3(sortBy, date);
+    const result = await read$3(date);
     return {
       data: result
     };
@@ -429,6 +489,52 @@ const remove$2 = async (evt) => {
     throw createError({
       statusCode: 500,
       statusMessage: "Something went wrong"
+    });
+  }
+};
+const update$2 = async (evt) => {
+  var _a;
+  try {
+    const id = (_a = evt.context.params) == null ? void 0 : _a.id;
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Invalid request: ID is required"
+      });
+    }
+    const body = await readBody(evt);
+    if (!body) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Invalid request: Missing body data"
+      });
+    }
+    const result = await update$3(id, {
+      adult_num: body.adult_num,
+      child_num: body.child_num,
+      contact_phone: body.contact_phone,
+      totalprice: body.totalprice,
+      contact_name: body.contact_name,
+      departure_loc: body.departure_loc,
+      destination_loc: body.destination_loc,
+      shuttle_date: body.shuttle_date,
+      shuttle_time: body.shuttle_time,
+      status: body.status,
+      payment_status: body.payment_status,
+      return_departure: body.return_departure,
+      return_destination: body.return_destination,
+      return_shuttle_date: body.return_shuttle_date,
+      return_shuttle_time: body.return_shuttle_time
+    });
+    return {
+      message: "Booking updated successfully",
+      data: result
+    };
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "Failed to update booking",
+      data: error
     });
   }
 };
@@ -661,6 +767,7 @@ router.get("/confirmationPage/:id", defineEventHandler(FindBookingDetailById));
 router.get("/myTrip/:id", defineEventHandler(FindBookingByUserId));
 router.get("/reschedulePage/:id", defineEventHandler(NotTraveledBooking));
 router.get("/reschedulePage/details/:id", defineEventHandler(FindBookingDetailById));
+router.put("/detailsUpdate/:id", defineEventHandler(update$2));
 router.delete("/DeleteBookingById", defineEventHandler(remove$2));
 router.get("/FindBookingDetailById/:id", defineEventHandler(FindBookingDetailById));
 router.post("/PostRefund/:id", defineEventHandler(create));
@@ -668,7 +775,7 @@ router.get("/GetAllRefund", defineEventHandler(readAll));
 router.put("/ApproveRefund", defineEventHandler(update));
 router.get("/GETDetailUsers/:id", defineEventHandler(detail));
 router.get("/GetUser", defineEventHandler(read$4));
-router.put("/EditUser", defineEventHandler(update$2));
+router.put("/EditUser", defineEventHandler(update$4));
 router.delete("/DeleteUser", defineEventHandler(remove$4));
 router.post("/POSTUser", defineEventHandler(create$4));
 router.get("/GETallOffdays", defineEventHandler(read));

@@ -32,13 +32,25 @@ export type BookingModel = {
 
 
 export const read = async (
-  sortBy: string = 'departure_loc',
   date: string = dayjs().format('YYYY-MM-DD')
 ) => {
-  console.log('📅 傳入 SQL 的 date:', date);
   const result = await sql({
-    query: `SELECT b.*, p.payment_status, (b.adult_num + b.child_num) AS total_tickets FROM booking b JOIN payment p ON p.booking_id = b.id AND p.LineID = b.LineID WHERE b.shuttle_date = ? ORDER BY b.status ASC, b.\`${sortBy}\` ASC`,
-    values: [date]
+    query: `SELECT 
+    b.*,
+    p.payment_status,
+    (b.adult_num + b.child_num) AS total_tickets 
+    FROM 
+    booking b 
+    JOIN 
+    payment p ON p.booking_id = b.id AND p.LineID = b.LineID 
+    WHERE 
+    b.shuttle_date = ?
+    OR
+    b.return_shuttle_date = ?
+    ORDER BY 
+    b.shuttle_time ASC,
+    b.return_shuttle_time ASC`,
+    values: [date, date]
   });
 
   return result as BookingModel[];
@@ -134,50 +146,70 @@ export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel,
   return { id: bookingID };
 };
 
-export const update = async (id: string, data: Pick<BookingModel, Exclude<keyof BookingModel, 'id' | 'status'| 'user_id' |'trip_type'|'arrivalpoint_date'|'arrivalpoint_time'|'flight_num'|'return_arrival_date'|'return_arrival_time'>>) => {
-    await sql({
-      query: `
-        UPDATE booking
-        SET
-          adult_num = ?,
-          child_num = ?,
-          contact_phone = ?,
-          totalprice = ?,
-          contact_name = ?,
-          departure_loc = ?,
-          destination_loc = ?,
-          return_departure = ?,
-          return_destination = ?,
-          ferry_time = ?,
-          flight_time = ?,
-          shuttle_date = ?,
-          shuttle_time = ?,
-          return_shuttle_date = ?,
-          return_shuttle_time = ?
-        WHERE id = ?
-      `,
-      values: [
-        data.adult_num,
-        data.child_num,
-        data.contact_phone,
-        data.totalprice,
-        data.contact_name,
-        data.departure_loc,
-        data.destination_loc,
-        data.return_departure,
-        data.return_destination,
-        data.ferry_time,
-        data.flight_time,
-        data.shuttle_date,
-        data.shuttle_time,
-        data.return_shuttle_date,
-        data.return_shuttle_time,
-        id]
-    });
-  
-    return await FindBookingDetailById(id);
-  };
-  
+export const update = async (
+  id: string,
+  data: Pick<BookingModel, 
+    'adult_num' | 'child_num' | 'contact_phone' | 'totalprice' |
+    'contact_name' | 'departure_loc' | 'destination_loc' |
+    'shuttle_date' | 'shuttle_time' | 'status'| 'return_departure'|
+    'return_destination'|'return_shuttle_date'|'return_shuttle_time'
+  > & {
+    payment_status: string
+  }
+) => {
+  // 1. 更新 booking 表
+  await sql({
+    query: `
+      UPDATE booking
+      SET
+        adult_num = ?,
+        child_num = ?,
+        contact_phone = ?,
+        totalprice = ?,
+        contact_name = ?,
+        departure_loc = ?,
+        destination_loc = ?,
+        return_departure = ?,
+        return_destination = ?,
+        shuttle_date = ?,
+        shuttle_time = ?,
+        return_shuttle_date = ?,
+        return_shuttle_time = ?,
+        status = ?
+      WHERE id = ?
+    `,
+    values: [
+      data.adult_num,
+      data.child_num,
+      data.contact_phone,
+      data.totalprice,
+      data.contact_name,
+      data.departure_loc,
+      data.destination_loc,
+      data.return_departure,
+      data.return_destination,
+      data.shuttle_date,
+      data.shuttle_time,
+      data.return_shuttle_date,
+      data.return_shuttle_time,
+      data.status,
+      id
+    ]
+  });
+
+  // 2. 更新 payment 表的 payment_status
+  await sql({
+    query: `
+      UPDATE payment
+      SET payment_status = ?
+      WHERE booking_id = ?
+    `,
+    values: [data.payment_status, id]
+  });
+
+  return await FindBookingDetailById(id);
+};
+
 export const FindBookingDetailById = async(id: string) =>{
     const result =(await sql({
         query: 'SELECT * from booking WHERE id = ?',

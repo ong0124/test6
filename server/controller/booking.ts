@@ -3,13 +3,30 @@ import dayjs from 'dayjs';
 
 import * as bookingModel from '~~/server/models/booking'
 
+// export const read = async (event: H3Event) => {
+//   const query = getQuery(event);
+//   const sortBy = (query.sortBy as string) || 'departure_loc';
+//   const date = (query.date as string) || dayjs().format('YYYY-MM-DD');  
+//   try {
+//     const result = await bookingModel.read(sortBy,date);
+
+//     return {
+//       data: result
+//     };
+//   } catch (err) {
+//     throw createError({
+//       statusCode: 500,
+//       statusMessage: 'Something went wrong'
+//     });
+//   }
+// };
+
+
 export const read = async (event: H3Event) => {
   const query = getQuery(event);
-  const sortBy = (query.sortBy as string) || 'departure_loc';
-  const date = (query.date as string) || dayjs().format('YYYY-MM-DD');
-  console.log('🛬 後端收到查詢:', { sortBy, date });  
+  const date = (query.date as string) || dayjs().format('YYYY-MM-DD');  
   try {
-    const result = await bookingModel.read(sortBy,date);
+    const result = await bookingModel.read(date);
 
     return {
       data: result
@@ -138,49 +155,52 @@ export const remove = async (evt: H3Event) => {
   };
 
 
-  // export const update = async (evt: H3Event) => {
-  //   try {
-  //     const id = evt.context.params?.id;
-  //     if (!id) {
-  //       throw createError({
-  //         statusCode: 400,
-  //         statusMessage: 'Invalid request: ID is required'
-  //       });
-  //     }
-  
-  //     // 讀取請求 body
-  //     const body = await readBody(evt);
-  //     if (!body) {
-  //       throw createError({
-  //         statusCode: 400,
-  //         statusMessage: 'Invalid request: Missing body data'
-  //       });
-  //     }
-  //     const result = await bookingModel.update(evt.context.params?.id as string, {
-  //       adult_num :body.adult_num,
-  //       child_num: body.child_num,
-  //       contact_phone: body.contact_phone,
-  //       totalprice: body.totalprice,
-  //       contact_name: body.contact_name,
-  //       departure_loc: body.departure_loc,
-  //       destination_loc: body.destination_loc,
-  //       return_departure: body.return_departure,
-  //       return_destination: body.return_destination,
-  //       ferry_time: body.ferry_time,
-  //       flight_time: body.flight_time,
-  //       shuttle_date: body.shuttle_date,
-  //       shuttle_time: body.shuttle_time,
-  //       return_shuttle_date: body.return_shuttle_date,
-  //       return_shuttle_time: body.return_shuttle_time,
-  //     });
-  
-  //     return {
-  //       data: result
-  //     };
-  //   } catch {
-  //     throw createError({
-  //       statusCode: 500,
-  //       statusMessage: 'Something went wrong'
-  //     });
-  //   }
-  // };
+export const update = async (evt: H3Event) => {
+  try {
+    const id = evt.context.params?.id;
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid request: ID is required'
+      });
+    }
+
+    const body = await readBody(evt);
+    if (!body) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid request: Missing body data'
+      });
+    }
+
+    const result = await bookingModel.update(id, {
+      adult_num: body.adult_num,
+      child_num: body.child_num,
+      contact_phone: body.contact_phone,
+      totalprice: body.totalprice,
+      contact_name: body.contact_name,
+      departure_loc: body.departure_loc,
+      destination_loc: body.destination_loc,
+      shuttle_date: body.shuttle_date,
+      shuttle_time: body.shuttle_time,
+      status: body.status, 
+      payment_status: body.payment_status,
+      return_departure:body.return_departure,
+      return_destination:body.return_destination,
+      return_shuttle_date:body.return_shuttle_date,
+      return_shuttle_time:body.return_shuttle_time 
+    });
+
+    return {
+      message: 'Booking updated successfully',
+      data: result
+    };
+  } catch (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Failed to update booking',
+      data: error
+    });
+  }
+};
+
