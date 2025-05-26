@@ -51,7 +51,7 @@
                 <thead>
                   <tr class="bg-gray-100 ">
                     <th class="p-4 text-sm md:text-lg sticky left-0 bg-indigo-200 whitespace-nowrap">訂單ID</th>
-                    <th v-for="(header, index) in tableHeaders.slice(1)" :key="index" class="p-4 text-sm md:text-sm bg-indigo-100 whitespace-nowrap">
+                    <th v-for="(header, index) in headersToRender.slice(1)" :key="index" class="p-4 text-sm md:text-sm bg-indigo-100 whitespace-nowrap">
                           {{ header }}
                     </th>
                     <th v-if="showDeleteColumn || showAddRow || isEditing " class=" whitespace-nowrap p-2 px-4 text-sm md:text-sm bg-indigo-100">
@@ -115,7 +115,7 @@
                       </td>
                   </tr>
                     <tr v-if="filteredOrders.length === 0 && !showAddRow">
-                      <td :colspan="tableHeaders.length + (showDeleteColumn ? 1 : 0)"
+                      <td :colspan="headersToRender.length + (showDeleteColumn ? 1 : 0)"
                           class="py-6 px-24 text-gray-400 text-lg md:text-lg">
                         🚫 這一天沒有訂單
                       </td>
@@ -145,12 +145,19 @@
                             </select>
                             <span v-else>{{ t((order.display_departure)) }}</span>
                         </td>
+                        <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
+                            <p>{{ order.flight_num }} </p>
+                            <p>{{ order.flight_loc }}</p>
+                        </td>
                         <td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">  
                             <select v-if="isEditing" v-model="order.destination_loc" class=" border rounded p-1 text-sm">
                               <option value="Booking.pier">水頭碼頭</option>
                               <option value="Booking.airport">尚義機場</option>
                             </select>
-                            <span v-else>{{ t((order.display_destination)) }}</span>
+                            <span v-else>{{ t((order.display_destination)) }} </span>
+                        </td>
+                        <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
+                            {{ order.ferry_time}}
                         </td>
                         <td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">  
                           <a-config-provider v-if="isEditing" :locale="zhTW">
@@ -362,6 +369,19 @@ const tableHeaders = [
   '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '是否付款','總價格',
 ];
 
+const headersToRender = computed(() => {
+  const newHeaders = [...tableHeaders]
+  if (sortBy.value === 'Booking.airport') {
+    const insertAt = (arr: string[], target: string, newItem: string) => {
+      const index = arr.indexOf(target)
+      if (index !== -1) arr.splice(index + 1, 0, newItem)
+    }
+    insertAt(newHeaders, '上車地點', '航班信息')
+    insertAt(newHeaders, '下車地點', '銜接的船班時間')
+  }
+  return newHeaders
+})
+
 // 設置狀態顏色
 const statusClass = (status: string) => ({
   'text-black font-bold bg-green-400 px-4 py-1 rounded-2xl': status === 'complete',
@@ -419,7 +439,10 @@ const fetchData = async () => {
           adult_num: booking.adult_num,
           child_num: booking.child_num,
           payment_status: booking.payment_status,
-          phone: booking.contact_phone
+          phone: booking.contact_phone,
+          flight_num: booking.flight_num,
+          flight_loc :booking.flight_loc,
+          ferry_time : booking.ferry_time
         };
 
         orders.push(goOrder);
@@ -447,7 +470,10 @@ const fetchData = async () => {
           adult_num: booking.adult_num,
           child_num: booking.child_num,
           payment_status: booking.payment_status,
-          phone: booking.contact_phone
+          phone: booking.contact_phone,
+          flight_num: booking.flight_num,
+          flight_loc :booking.flight_loc,
+          ferry_time : booking.ferry_time
         };
 
         orders.push(returnOrder);

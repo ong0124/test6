@@ -171,6 +171,18 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       "是否付款",
       "總價格"
     ];
+    const headersToRender = computed(() => {
+      const newHeaders = [...tableHeaders];
+      if (sortBy.value === "Booking.airport") {
+        const insertAt = (arr, target, newItem) => {
+          const index = arr.indexOf(target);
+          if (index !== -1) arr.splice(index + 1, 0, newItem);
+        };
+        insertAt(newHeaders, "上車地點", "航班信息");
+        insertAt(newHeaders, "下車地點", "銜接的船班時間");
+      }
+      return newHeaders;
+    });
     const statusClass = (status) => ({
       "text-black font-bold bg-green-400 px-4 py-1 rounded-2xl": status === "complete",
       "text-white font-bold bg-red-400 px-2 py-1 rounded-2xl": status === "notTraveled"
@@ -213,7 +225,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               adult_num: booking.adult_num,
               child_num: booking.child_num,
               payment_status: booking.payment_status,
-              phone: booking.contact_phone
+              phone: booking.contact_phone,
+              flight_num: booking.flight_num,
+              flight_loc: booking.flight_loc,
+              ferry_time: booking.ferry_time
             };
             orders2.push(goOrder);
             if (booking.departure_loc === "Booking.airport") {
@@ -238,7 +253,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               adult_num: booking.adult_num,
               child_num: booking.child_num,
               payment_status: booking.payment_status,
-              phone: booking.contact_phone
+              phone: booking.contact_phone,
+              flight_num: booking.flight_num,
+              flight_loc: booking.flight_loc,
+              ferry_time: booking.ferry_time
             };
             orders2.push(returnOrder);
             if (booking.return_departure === "Booking.airport") {
@@ -362,7 +380,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _: 1
       }, _parent));
       _push(`</div><div class="flex my-2 ml-8 items-center"><p>上車地點：</p><div class="flex flex-1 justify-around"><button class="${ssrRenderClass([sortBy.value === "Booking.airport" ? "bg-amber-500 text-white border-white" : "border-gray-500", "border-2 border-gray-500 rounded-xl py-1 px-4"])}"> 尚義機場 </button><button class="${ssrRenderClass([sortBy.value === "Booking.pier" ? "bg-amber-500 text-white border-white" : "border-gray-500", "border-2 border-gray-500 rounded-xl py-1 px-4"])}"> 水頭碼頭 </button></div></div><div class="flex flex-col ml-2 mb-16"><div class="overflow-x-auto pb-4"><table class="table-fixed min-w-full mr-12"><thead><tr class="bg-gray-100"><th class="p-4 text-sm md:text-lg sticky left-0 bg-indigo-200 whitespace-nowrap">訂單ID</th><!--[-->`);
-      ssrRenderList(tableHeaders.slice(1), (header, index) => {
+      ssrRenderList(unref(headersToRender).slice(1), (header, index) => {
         _push(`<th class="p-4 text-sm md:text-sm bg-indigo-100 whitespace-nowrap">${ssrInterpolate(header)}</th>`);
       });
       _push(`<!--]-->`);
@@ -435,7 +453,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _push(`<!---->`);
       }
       if (unref(filteredOrders).length === 0 && !showAddRow.value) {
-        _push(`<tr><td${ssrRenderAttr("colspan", tableHeaders.length + (showDeleteColumn.value ? 1 : 0))} class="py-6 px-24 text-gray-400 text-lg md:text-lg"> 🚫 這一天沒有訂單 </td></tr>`);
+        _push(`<tr><td${ssrRenderAttr("colspan", unref(headersToRender).length + (showDeleteColumn.value ? 1 : 0))} class="py-6 px-24 text-gray-400 text-lg md:text-lg"> 🚫 這一天沒有訂單 </td></tr>`);
       } else {
         _push(`<!---->`);
       }
@@ -459,13 +477,25 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<span>${ssrInterpolate(unref(t)(order.display_departure))}</span>`);
         }
-        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
+        _push(`</td>`);
+        if (sortBy.value === "Booking.airport") {
+          _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg"><p>${ssrInterpolate(order.flight_num)}</p><p>${ssrInterpolate(order.flight_loc)}</p></td>`);
+        } else {
+          _push(`<!---->`);
+        }
+        _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
           _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.pier") : ssrLooseEqual(order.destination_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.airport") : ssrLooseEqual(order.destination_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
         } else {
           _push(`<span>${ssrInterpolate(unref(t)(order.display_destination))}</span>`);
         }
-        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        _push(`</td>`);
+        if (sortBy.value === "Booking.airport") {
+          _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.ferry_time)}</td>`);
+        } else {
+          _push(`<!---->`);
+        }
+        _push(`<td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
           _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {

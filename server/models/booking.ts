@@ -20,7 +20,8 @@ export type BookingModel = {
     return_arrival_time:string;
     flight_num: string;
     ferry_time: string;
-    flight_time: string; 
+    flight_time: string;
+    flight_loc?: string; 
     shuttle_date: string; 
     shuttle_time: string; 
     return_shuttle_date: string; 
