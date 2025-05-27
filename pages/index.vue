@@ -68,13 +68,31 @@
                         <select v-model="newOrder.departure_loc" class="w-full border rounded p-1 text-sm">
                           <option value="Booking.pier">水頭碼頭</option>
                           <option value="Booking.airport">尚義機場</option>
-                        </select>                    
+                        </select>
+                        <a-config-provider :locale="zhTW"> 
+                           <a-time-picker type="time" v-model:value="newOrder.arrival_time" class="w-full" :inputReadOnly="true" format="HH:mm" />
+                        </a-config-provider>                    
+                      </td>
+                      <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 text-sm md:text-lg">
+                        <input  v-model="newOrder.flight_num" class="border rounded p-1 text-sm" /></input>
+                        <select v-model="newOrder.flight_loc" class="border rounded p-1 text-sm mt-2">
+                                  <option value="TSA">松山 (TSA)</option>
+                                  <option value="RMQ">台中 (RMQ)</option>
+                                  <option value="CYI">嘉義 (CYI)</option>
+                                  <option value="TNN">台南 (TNN)</option>
+                                  <option value="MZG">澎湖 (MZG)</option>
+                        </select>
                       </td>
                       <td class="border p-2">
                         <select v-model="newOrder.destination_loc" class="w-full border rounded p-1 text-sm">
                           <option value="Booking.pier">水頭碼頭</option>
                           <option value="Booking.airport">尚義機場</option>
                         </select>
+                      </td>
+                      <td class="border p-2">
+                          <a-config-provider :locale="zhTW">
+                              <a-time-picker type="time" v-model:value="newOrder.flightOrferry_time" class="w-full" :inputReadOnly="true" format="HH:mm" />
+                          </a-config-provider>
                       </td>
                       <td class="border p-2">
                         <a-config-provider :locale="zhTW"> 
@@ -138,16 +156,30 @@
                             {{ order.phone }}
                           </template>
                         </td>
-                        <td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
-                            <select v-if="isEditing" v-model="order.departure_loc" class=" border rounded p-1 text-sm">
+                        <td class="border-b py-4 px-8 text-sm md:text-lg">
+                          <span v-if="isEditing" >
+                            <select v-model="order.departure_loc" class=" border rounded p-1 text-sm">
                               <option value="Booking.pier">水頭碼頭</option>
                               <option value="Booking.airport">尚義機場</option>
                             </select>
-                            <span v-else>{{ t((order.display_departure)) }}</span>
+                              <a-config-provider :locale="zhTW"> 
+                                <a-time-picker type="time" v-model:value="order.arrival_time" class="w-full" :inputReadOnly="true" format="HH:mm" />
+                              </a-config-provider>  
+                          </span>
+                          <span v-else>
+                            <p>{{ t((order.display_departure)) }}</p>
+                            <p>({{ order.arrivalpoint_time }})</p>
+                          </span>
                         </td>
-                        <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
-                            <p>{{ order.flight_num }} </p>
-                            <p>{{ order.flight_loc }}</p>
+                        <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 text-sm md:text-lg">
+                           <span v-if="isEditing" >
+                            <input v-model="order.flight_loc" class="border rounded p-1 text-sm" >
+                            <input v-model="order.flight_num" class="border rounded p-1 text-sm" >
+                           </span>
+                           <span v-else>
+                             <p>{{ order.flight_loc }}</p>
+                             <p>{{ order.flight_num }} </p>
+                           </span>
                         </td>
                         <td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">  
                             <select v-if="isEditing" v-model="order.destination_loc" class=" border rounded p-1 text-sm">
@@ -156,18 +188,27 @@
                             </select>
                             <span v-else>{{ t((order.display_destination)) }} </span>
                         </td>
-                        <td v-if= "sortBy === 'Booking.airport'"class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
-                            {{ order.ferry_time}}
+                        <td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">
+                          <template v-if="isEditing">
+                              <a-config-provider :locale="zhTW"> 
+                                <a-time-picker type="time" v-model:value="order.ferry_time" class="w-full" :inputReadOnly="true" format="HH:mm" />
+                              </a-config-provider> 
+                          </template>
+                          <template v-else>
+                             {{ sortBy === 'Booking.airport' ? order.ferry_time : order.flight_time }}
+                          </template>
                         </td>
-                        <td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">  
-                          <a-config-provider v-if="isEditing" :locale="zhTW">
-                            <a-date-picker v-model:value="order.shuttle_date"  :inputReadOnly="true" valueFormat="YYYY-MM-DD" />
-                          </a-config-provider>
+                        <td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">
+                          <span v-if="isEditing">
+                            <a-config-provider :locale="zhTW">
+                              <a-date-picker v-model:value="order.shuttle_date"  :inputReadOnly="true" valueFormat="YYYY-MM-DD" />
+                            </a-config-provider>
+                          </span>  
                           <span v-else>{{ order.display_date }}</span>
                         </td>
                         <td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg"> 
                           <a-config-provider v-if="isEditing" :locale="zhTW">
-                          <a-time-picker v-model:value="order.shuttle_time" :inputReadOnly="true" format="HH:mm" />
+                            <a-time-picker v-model:value="order.shuttle_time" :inputReadOnly="true" format="HH:mm" />
                           </a-config-provider>
                           <span v-else>{{ order.display_time }}</span>
                         </td>
@@ -186,7 +227,14 @@
                           <input v-if="isEditing" type="number" v-model.number="order.child_num" class=" border rounded p-1 text-sm" />
                           <span v-else>{{ order.child_num }}</span>
                         </td>
-                        <td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg ">{{ order.totalTickets }}</td>
+                        <td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg ">
+                          <span v-if="isEditing" >
+                             {{ order.adult_num + order.child_num }} 
+                          </span>
+                          <span v-else>
+                            {{ order.totalTickets }}
+                          </span>
+                        </td>
 
                         <td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">
                           <select v-if="isEditing" v-model="order.payment_status" class=" border rounded p-1 text-sm">
@@ -268,7 +316,6 @@
     
     const doc = new jsPDF();
     
-    // 正确的字体路径（必须放 public/fonts/）
     const fontUrl = "/fonts/SourceHanSans-Normal.ttf"; 
     const fontResponse = await fetch(fontUrl);
     const fontData = await fontResponse.arrayBuffer(); 
@@ -282,7 +329,7 @@
     doc.setFont("SourceHanSans-Normal");
     
     // 标题
-    doc.text(`訂單詳情（${FileNameDate}）`, 14, 10);
+    doc.text(`訂單詳情（${FileNameDate})`, 14, 10);
     
     // 表格数据
     const { headers, data } = getExportData();
@@ -366,18 +413,20 @@
 
 const tableHeaders = [
   '訂單 ID','聯絡人', '電話號碼', '上車地點', '下車地點','日期',  
-  '時間', '狀態','成人票(人)','兒童票(人)', '全票數', '是否付款','總價格',
+  '發車時間', '狀態','成人票(人)','兒童票(人)', '全票數', '是否付款','總價格',
 ];
 
 const headersToRender = computed(() => {
   const newHeaders = [...tableHeaders]
+  const insertAt = (arr: string[], target: string, newItem: string) => {
+    const index = arr.indexOf(target)
+    if (index !== -1) arr.splice(index + 1, 0, newItem)
+  }
   if (sortBy.value === 'Booking.airport') {
-    const insertAt = (arr: string[], target: string, newItem: string) => {
-      const index = arr.indexOf(target)
-      if (index !== -1) arr.splice(index + 1, 0, newItem)
-    }
     insertAt(newHeaders, '上車地點', '航班信息')
     insertAt(newHeaders, '下車地點', '銜接的船班時間')
+  }else{
+    insertAt(newHeaders, '下車地點', '銜接班機的時間')
   }
   return newHeaders
 })
@@ -442,7 +491,9 @@ const fetchData = async () => {
           phone: booking.contact_phone,
           flight_num: booking.flight_num,
           flight_loc :booking.flight_loc,
-          ferry_time : booking.ferry_time
+          ferry_time : dayjs(booking.ferry_time, 'HH:mm'),
+          flight_time : booking.flight_time,
+          arrivalpoint_time : booking.arrivalpoint_time
         };
 
         orders.push(goOrder);
@@ -473,7 +524,9 @@ const fetchData = async () => {
           phone: booking.contact_phone,
           flight_num: booking.flight_num,
           flight_loc :booking.flight_loc,
-          ferry_time : booking.ferry_time
+          ferry_time : dayjs(booking.ferry_time, 'HH:mm'),
+          flight_time : booking.flight_time,
+          arrivalpoint_time : booking.return_arrival_time
         };
 
         orders.push(returnOrder);
@@ -564,8 +617,12 @@ const fetchData = async () => {
       status: '',
       adult_num: 0,
       child_num: 0,
-      payment_status: 'unpaid',
-      totalprice: 0
+      payment_status: '',
+      totalprice: 0,
+      flight_num:'',
+      flight_loc:'',
+      arrival_time:'',
+      flightOrferry_time:''
     });
 
     const saveNewOrder = async () => {
@@ -579,14 +636,17 @@ const fetchData = async () => {
           contact_name: newOrder.contact,
           departure_loc: newOrder.departure_loc,
           destination_loc: newOrder.destination_loc,
-          return_departure: '',
-          return_destination: '',
           arrivalpoint_date: undefined, 
-          arrivalpoint_time: undefined,
+          arrivalpoint_time: newOrder.arrival_time 
+          ? dayjs(newOrder.arrival_time).format('HH:mm')
+          : undefined,
           return_arrival_date: undefined, 
           return_arrival_time: undefined,
-          flight_num: undefined,
-          ferry_time: undefined,
+          flight_num: newOrder.flight_num,
+          flight_loc: newOrder.flight_loc,
+          ferry_time: newOrder.flightOrferry_time
+          ? dayjs(newOrder.shuttle_time).format('HH:mm')
+          : undefined,
           flight_time:undefined,
           shuttle_date: newOrder.shuttle_date
             ? dayjs(newOrder.shuttle_date).format('YYYY-MM-DD')
@@ -609,17 +669,20 @@ const fetchData = async () => {
           });
           if (response?.id) {
           await fetchData();
-          newOrder.contact= '';
-          newOrder.phone= '';
-          newOrder.departure_loc= '';
-          newOrder.destination_loc= '';
-          newOrder.shuttle_date= '';
-          newOrder.shuttle_time= '';
-          newOrder.status= '';
-          newOrder.adult_num= 0;
-          newOrder.child_num= 0;
-          newOrder.payment_status= 'unpaid';
-          newOrder.totalprice= 0;
+          newOrder.contact = '';
+          newOrder.phone = '';
+          newOrder.departure_loc = '';
+          newOrder.destination_loc = '';
+          newOrder.shuttle_date = '';
+          newOrder.shuttle_time = '';
+          newOrder.status = '';
+          newOrder.adult_num = 0;
+          newOrder.child_num = 0;
+          newOrder.payment_status = '';
+          newOrder.totalprice = 0;
+          newOrder.arrival_time ='';
+          newOrder.flight_num ='';
+          newOrder.flight_loc =''
           }
         }catch{
           alert(t('alertMessage4'));
@@ -658,31 +721,43 @@ const confirmUpdate = async (order: any) => {
     const body: any = {
       contact_name: order.contact,
       contact_phone: order.phone,
-      departure_loc: order.departure_loc,
-      destination_loc: order.destination_loc,
+      arrival_time: order.arrival_time,
+      flight_loc: order.flight_loc,
+      flight_num: order.flight_num,
       status: order.status,
       adult_num: order.adult_num,
       child_num: order.child_num,
       totalprice: order.totalprice,
       payment_status: order.payment_status
     };
+    if(order.departure_loc === 'Booking.airport'){
+      body.ferry_time = order.ferry_time;
+    }else{
+      body.flight_time = order.ferry_time;
+    }
     if (order.segment === 'go') {
       body.departure_loc = order.departure_loc;
       body.destination_loc = order.destination_loc;
+      body.arrival_time = order.arrival_time
+      ? dayjs(order.arrival_time).format('HH:mm')
+      : undefined;
       body.shuttle_date = order.shuttle_date 
       ? dayjs(order.shuttle_date).format('YYYY-MM-DD')
       : undefined;
       body.shuttle_time = order.shuttle_time
-      ? dayjs(order.shuttle_time).format('HH:mm:ss')
+      ? dayjs(order.shuttle_time).format('HH:mm')
       : undefined;
     } else if (order.segment === 'return') {
       body.return_departure = order.departure_loc;
       body.return_destination = order.destination_loc;
+      body.return_arrival_time = order.arrival_time
+      ? dayjs(order.arrival_time).format('HH:mm')
+      : undefined;
       body.return_shuttle_date = order.shuttle_date
       ? dayjs(order.shuttle_date).format('YYYY-MM-DD')
       : undefined;
       body.return_shuttle_time = order.shuttle_time
-      ? dayjs(order.shuttle_time).format('HH:mm:ss')
+      ? dayjs(order.shuttle_time).format('HH:mm')
       : undefined;
     }
     console.log('🧾 請求內容 body:', body);

@@ -24,6 +24,7 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
+import 'node:module';
 import 'node:path';
 import 'unhead/server';
 import 'unhead/utils';
@@ -89,7 +90,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       doc.addFileToVFS("SourceHanSans-Normal.ttf", fontBase64);
       doc.addFont("SourceHanSans-Normal.ttf", "SourceHanSans-Normal", "normal");
       doc.setFont("SourceHanSans-Normal");
-      doc.text(`訂單詳情（${FileNameDate}）`, 14, 10);
+      doc.text(`訂單詳情（${FileNameDate})`, 14, 10);
       const { headers, data: data2 } = getExportData();
       autoTable(doc, {
         head: [headers],
@@ -163,7 +164,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       "上車地點",
       "下車地點",
       "日期",
-      "時間",
+      "發車時間",
       "狀態",
       "成人票(人)",
       "兒童票(人)",
@@ -173,13 +174,15 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     ];
     const headersToRender = computed(() => {
       const newHeaders = [...tableHeaders];
+      const insertAt = (arr, target, newItem) => {
+        const index = arr.indexOf(target);
+        if (index !== -1) arr.splice(index + 1, 0, newItem);
+      };
       if (sortBy.value === "Booking.airport") {
-        const insertAt = (arr, target, newItem) => {
-          const index = arr.indexOf(target);
-          if (index !== -1) arr.splice(index + 1, 0, newItem);
-        };
         insertAt(newHeaders, "上車地點", "航班信息");
         insertAt(newHeaders, "下車地點", "銜接的船班時間");
+      } else {
+        insertAt(newHeaders, "下車地點", "銜接班機的時間");
       }
       return newHeaders;
     });
@@ -228,7 +231,9 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               phone: booking.contact_phone,
               flight_num: booking.flight_num,
               flight_loc: booking.flight_loc,
-              ferry_time: booking.ferry_time
+              ferry_time: dayjs(booking.ferry_time, "HH:mm"),
+              flight_time: booking.flight_time,
+              arrivalpoint_time: booking.arrivalpoint_time
             };
             orders2.push(goOrder);
             if (booking.departure_loc === "Booking.airport") {
@@ -256,7 +261,9 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               phone: booking.contact_phone,
               flight_num: booking.flight_num,
               flight_loc: booking.flight_loc,
-              ferry_time: booking.ferry_time
+              ferry_time: dayjs(booking.ferry_time, "HH:mm"),
+              flight_time: booking.flight_time,
+              arrivalpoint_time: booking.return_arrival_time
             };
             orders2.push(returnOrder);
             if (booking.return_departure === "Booking.airport") {
@@ -326,8 +333,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       status: "",
       adult_num: 0,
       child_num: 0,
-      payment_status: "unpaid",
-      totalprice: 0
+      payment_status: "",
+      totalprice: 0,
+      flight_num: "",
+      flight_loc: "",
+      arrival_time: "",
+      flightOrferry_time: ""
     });
     watch(() => newOrder.departure_loc, (newVal) => {
       if (newVal === "Booking.pier") {
@@ -391,7 +402,67 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       _push(`</tr></thead><tbody>`);
       if (showAddRow.value) {
-        _push(`<tr class="bg-yellow-50 text-center"><td class="border p-2">-</td><td class="border p-2"><input${ssrRenderAttr("value", unref(newOrder).contact)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><input${ssrRenderAttr("value", unref(newOrder).phone)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).departure_loc) ? ssrLooseContain(unref(newOrder).departure_loc, "Booking.pier") : ssrLooseEqual(unref(newOrder).departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).departure_loc) ? ssrLooseContain(unref(newOrder).departure_loc, "Booking.airport") : ssrLooseEqual(unref(newOrder).departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select></td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).destination_loc) ? ssrLooseContain(unref(newOrder).destination_loc, "Booking.pier") : ssrLooseEqual(unref(newOrder).destination_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).destination_loc) ? ssrLooseContain(unref(newOrder).destination_loc, "Booking.airport") : ssrLooseEqual(unref(newOrder).destination_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select></td><td class="border p-2">`);
+        _push(`<tr class="bg-yellow-50 text-center"><td class="border p-2">-</td><td class="border p-2"><input${ssrRenderAttr("value", unref(newOrder).contact)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><input${ssrRenderAttr("value", unref(newOrder).phone)} class="w-full border rounded p-1 text-sm"></td><td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).departure_loc) ? ssrLooseContain(unref(newOrder).departure_loc, "Booking.pier") : ssrLooseEqual(unref(newOrder).departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).departure_loc) ? ssrLooseContain(unref(newOrder).departure_loc, "Booking.airport") : ssrLooseEqual(unref(newOrder).departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+        _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+          default: withCtx((_, _push2, _parent2, _scopeId) => {
+            if (_push2) {
+              _push2(ssrRenderComponent(_component_a_time_picker, {
+                type: "time",
+                value: unref(newOrder).arrival_time,
+                "onUpdate:value": ($event) => unref(newOrder).arrival_time = $event,
+                class: "w-full",
+                inputReadOnly: true,
+                format: "HH:mm"
+              }, null, _parent2, _scopeId));
+            } else {
+              return [
+                createVNode(_component_a_time_picker, {
+                  type: "time",
+                  value: unref(newOrder).arrival_time,
+                  "onUpdate:value": ($event) => unref(newOrder).arrival_time = $event,
+                  class: "w-full",
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, 8, ["value", "onUpdate:value"])
+              ];
+            }
+          }),
+          _: 1
+        }, _parent));
+        _push(`</td>`);
+        if (sortBy.value === "Booking.airport") {
+          _push(`<td class="border-b py-4 px-8 text-sm md:text-lg"><input${ssrRenderAttr("value", unref(newOrder).flight_num)} class="border rounded p-1 text-sm"><select class="border rounded p-1 text-sm mt-2"><option value="TSA"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "TSA") : ssrLooseEqual(unref(newOrder).flight_loc, "TSA")) ? " selected" : ""}>松山 (TSA)</option><option value="RMQ"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "RMQ") : ssrLooseEqual(unref(newOrder).flight_loc, "RMQ")) ? " selected" : ""}>台中 (RMQ)</option><option value="CYI"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "CYI") : ssrLooseEqual(unref(newOrder).flight_loc, "CYI")) ? " selected" : ""}>嘉義 (CYI)</option><option value="TNN"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "TNN") : ssrLooseEqual(unref(newOrder).flight_loc, "TNN")) ? " selected" : ""}>台南 (TNN)</option><option value="MZG"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "MZG") : ssrLooseEqual(unref(newOrder).flight_loc, "MZG")) ? " selected" : ""}>澎湖 (MZG)</option></select></td>`);
+        } else {
+          _push(`<!---->`);
+        }
+        _push(`<td class="border p-2"><select class="w-full border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).destination_loc) ? ssrLooseContain(unref(newOrder).destination_loc, "Booking.pier") : ssrLooseEqual(unref(newOrder).destination_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).destination_loc) ? ssrLooseContain(unref(newOrder).destination_loc, "Booking.airport") : ssrLooseEqual(unref(newOrder).destination_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select></td><td class="border p-2">`);
+        _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+          default: withCtx((_, _push2, _parent2, _scopeId) => {
+            if (_push2) {
+              _push2(ssrRenderComponent(_component_a_time_picker, {
+                type: "time",
+                value: unref(newOrder).flightOrferry_time,
+                "onUpdate:value": ($event) => unref(newOrder).flightOrferry_time = $event,
+                class: "w-full",
+                inputReadOnly: true,
+                format: "HH:mm"
+              }, null, _parent2, _scopeId));
+            } else {
+              return [
+                createVNode(_component_a_time_picker, {
+                  type: "time",
+                  value: unref(newOrder).flightOrferry_time,
+                  "onUpdate:value": ($event) => unref(newOrder).flightOrferry_time = $event,
+                  class: "w-full",
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, 8, ["value", "onUpdate:value"])
+              ];
+            }
+          }),
+          _: 1
+        }, _parent));
+        _push(`</td><td class="border p-2">`);
         _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
           default: withCtx((_, _push2, _parent2, _scopeId) => {
             if (_push2) {
@@ -471,15 +542,48 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<!--[-->${ssrInterpolate(order.phone)}<!--]-->`);
         }
-        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
+        _push(`</td><td class="border-b py-4 px-8 text-sm md:text-lg">`);
         if (isEditing.value) {
-          _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.pier") : ssrLooseEqual(order.departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.airport") : ssrLooseEqual(order.departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+          _push(`<span><select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.pier") : ssrLooseEqual(order.departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.airport") : ssrLooseEqual(order.departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+          _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+            default: withCtx((_, _push2, _parent2, _scopeId) => {
+              if (_push2) {
+                _push2(ssrRenderComponent(_component_a_time_picker, {
+                  type: "time",
+                  value: order.arrival_time,
+                  "onUpdate:value": ($event) => order.arrival_time = $event,
+                  class: "w-full",
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, _parent2, _scopeId));
+              } else {
+                return [
+                  createVNode(_component_a_time_picker, {
+                    type: "time",
+                    value: order.arrival_time,
+                    "onUpdate:value": ($event) => order.arrival_time = $event,
+                    class: "w-full",
+                    inputReadOnly: true,
+                    format: "HH:mm"
+                  }, null, 8, ["value", "onUpdate:value"])
+                ];
+              }
+            }),
+            _: 2
+          }, _parent));
+          _push(`</span>`);
         } else {
-          _push(`<span>${ssrInterpolate(unref(t)(order.display_departure))}</span>`);
+          _push(`<span><p>${ssrInterpolate(unref(t)(order.display_departure))}</p><p>(${ssrInterpolate(order.arrivalpoint_time)})</p></span>`);
         }
         _push(`</td>`);
         if (sortBy.value === "Booking.airport") {
-          _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg"><p>${ssrInterpolate(order.flight_num)}</p><p>${ssrInterpolate(order.flight_loc)}</p></td>`);
+          _push(`<td class="border-b py-4 px-8 text-sm md:text-lg">`);
+          if (isEditing.value) {
+            _push(`<span><input${ssrRenderAttr("value", order.flight_loc)} class="border rounded p-1 text-sm"><input${ssrRenderAttr("value", order.flight_num)} class="border rounded p-1 text-sm"></span>`);
+          } else {
+            _push(`<span><p>${ssrInterpolate(order.flight_loc)}</p><p>${ssrInterpolate(order.flight_num)}</p></span>`);
+          }
+          _push(`</td>`);
         } else {
           _push(`<!---->`);
         }
@@ -489,14 +593,40 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<span>${ssrInterpolate(unref(t)(order.display_destination))}</span>`);
         }
-        _push(`</td>`);
-        if (sortBy.value === "Booking.airport") {
-          _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.ferry_time)}</td>`);
-        } else {
-          _push(`<!---->`);
-        }
-        _push(`<td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
+          _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+            default: withCtx((_, _push2, _parent2, _scopeId) => {
+              if (_push2) {
+                _push2(ssrRenderComponent(_component_a_time_picker, {
+                  type: "time",
+                  value: order.ferry_time,
+                  "onUpdate:value": ($event) => order.ferry_time = $event,
+                  class: "w-full",
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, _parent2, _scopeId));
+              } else {
+                return [
+                  createVNode(_component_a_time_picker, {
+                    type: "time",
+                    value: order.ferry_time,
+                    "onUpdate:value": ($event) => order.ferry_time = $event,
+                    class: "w-full",
+                    inputReadOnly: true,
+                    format: "HH:mm"
+                  }, null, 8, ["value", "onUpdate:value"])
+                ];
+              }
+            }),
+            _: 2
+          }, _parent));
+        } else {
+          _push(`<!--[-->${ssrInterpolate(sortBy.value === "Booking.airport" ? order.ferry_time : order.flight_time)}<!--]-->`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<span>`);
           _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
               if (_push2) {
@@ -519,6 +649,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             }),
             _: 2
           }, _parent));
+          _push(`</span>`);
         } else {
           _push(`<span>${ssrInterpolate(order.display_date)}</span>`);
         }
@@ -567,7 +698,13 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<span>${ssrInterpolate(order.child_num)}</span>`);
         }
-        _push(`</td><td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg">${ssrInterpolate(order.totalTickets)}</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
+        _push(`</td><td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value) {
+          _push(`<span>${ssrInterpolate(order.adult_num + order.child_num)}</span>`);
+        } else {
+          _push(`<span>${ssrInterpolate(order.totalTickets)}</span>`);
+        }
+        _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
           _push(`<select class="border rounded p-1 text-sm"><option value="已付款"${ssrIncludeBooleanAttr(Array.isArray(order.payment_status) ? ssrLooseContain(order.payment_status, "已付款") : ssrLooseEqual(order.payment_status, "已付款")) ? " selected" : ""}>已付款</option><option value="未付款"${ssrIncludeBooleanAttr(Array.isArray(order.payment_status) ? ssrLooseContain(order.payment_status, "未付款") : ssrLooseEqual(order.payment_status, "未付款")) ? " selected" : ""}>未付款</option></select>`);
         } else {
