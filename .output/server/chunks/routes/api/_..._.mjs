@@ -10,7 +10,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 
 const pool = createPool({
@@ -234,8 +233,9 @@ const create$3 = async (data) => {
       shuttle_time,
       return_shuttle_date,
       return_shuttle_time,
-      status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      status,
+      flight_loc
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     values: [
       data.trip_type,
@@ -260,7 +260,8 @@ const create$3 = async (data) => {
       data.shuttle_time,
       data.return_shuttle_date,
       data.return_shuttle_time,
-      data.status
+      data.status,
+      data.flight_loc
     ]
   });
   console.log("Inserted result:", result);
@@ -312,7 +313,12 @@ const update$3 = async (id, data) => {
         shuttle_time = ?,
         return_shuttle_date = ?,
         return_shuttle_time = ?,
-        status = ?
+        status = ?,
+        ferry_time = ?,
+        flight_time = ?,
+        arrivalpoint_time = ?,
+        flight_num = ?,
+        flight_loc = ?
       WHERE id = ?
     `,
     values: [
@@ -330,6 +336,11 @@ const update$3 = async (id, data) => {
       data.return_shuttle_date,
       data.return_shuttle_time,
       data.status,
+      data.ferry_time,
+      data.flight_time,
+      data.arrivalpoint_time,
+      data.flight_num,
+      data.flight_loc,
       id
     ]
   });
@@ -415,7 +426,8 @@ const create$2 = async (evt) => {
       return_shuttle_date: body.return_shuttle_date,
       return_shuttle_time: body.return_shuttle_time,
       status: body.status,
-      payment_status: body.payment_status
+      payment_status: body.payment_status,
+      flight_loc: body.flight_loc
     });
     if (!result || !result.id) {
       throw createError({ statusCode: 500, statusMessage: "Failed to create booking, no ID returned" });
@@ -525,7 +537,12 @@ const update$2 = async (evt) => {
       return_departure: body.return_departure,
       return_destination: body.return_destination,
       return_shuttle_date: body.return_shuttle_date,
-      return_shuttle_time: body.return_shuttle_time
+      return_shuttle_time: body.return_shuttle_time,
+      ferry_time: body.ferry_time,
+      flight_time: body.flight_time,
+      flight_num: body.flight_num,
+      flight_loc: body.flight_loc,
+      arrivalpoint_time: body.arrivalpoint_time
     });
     return {
       message: "Booking updated successfully",

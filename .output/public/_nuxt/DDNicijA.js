@@ -1,0 +1,1 @@
+import{d as t}from"./Db1GXBME.js";const u=r=>r?t(r).format("YYYY-MM-DD"):null;function a(r){if(!r)return null;const n=t(r,"HH:mm:ss",!0);if(n.isValid())return n;const o=t(r,"HH:mm",!0);return o.isValid()?o:null}function i(r){return r?r.format("HH:mm"):""}export{u as a,i as d,a as f};

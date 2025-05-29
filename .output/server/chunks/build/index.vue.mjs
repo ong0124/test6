@@ -1,5 +1,6 @@
 import __nuxt_component_3 from './index2.mjs';
 import { _ as _sfc_main$2 } from './PopMenu.vue.mjs';
+import { d as displayTime, f as formatTime, a as formatDate } from './formatDate.mjs';
 import { defineComponent, ref, computed, watch, reactive, unref, withCtx, createVNode, nextTick, useSSRContext } from 'vue';
 import { ssrRenderComponent, ssrRenderAttr, ssrRenderClass, ssrRenderList, ssrInterpolate, ssrIncludeBooleanAttr, ssrLooseContain, ssrLooseEqual } from 'vue/server-renderer';
 import { d as dayjs, _ as _sfc_main$1, a as _sfc_main$3 } from '../_/index.mjs';
@@ -7,7 +8,6 @@ import { C as ConfigProvider, l as localeValues, D as DatePicker$1 } from './day
 import ExcelJS from 'exceljs';
 import FileSaver from 'file-saver';
 import { e as useI18n } from './server.mjs';
-import { f as formatDate } from './formatDate.mjs';
 import { T as TimePicker$1 } from './dayjs2.mjs';
 import '@iconify/utils/lib/css/icon';
 import '@iconify/vue';
@@ -24,7 +24,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'unhead/server';
 import 'unhead/utils';
@@ -59,22 +58,31 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     const DateSelected = ref(dayjs());
     const FileNameDate = DateSelected.value.format("YYYY年MM月DD日");
     const getExportData = () => {
-      const headers = tableHeaders;
-      const data2 = filteredOrders.value.map((order) => [
-        order.id,
-        order.contact,
-        order.phone,
-        t(`${order.display_departure}`),
-        t(`${order.display_destination}`),
-        formatDate(order.display_date),
-        order.display_time,
-        TranslateStatus(order.status),
-        order.adult_num,
-        order.child_num,
-        order.totalTickets,
-        order.totalprice,
-        order.payment_status
-      ]);
+      const headers = headersToRender.value;
+      const data2 = filteredOrders.value.map((order) => {
+        const departureWithTime = `${t(order.display_departure)}
+(${displayTime(order.arrivalpoint_time)})`;
+        const flightInfo = sortBy.value === "Booking.airport" ? `${order.flight_loc ?? ""}
+${order.flight_num ?? ""}` : "";
+        const tripTime = sortBy.value === "Booking.airport" ? displayTime(order.flight_time) : displayTime(order.ferry_time);
+        return [
+          order.id,
+          order.contact,
+          order.phone,
+          departureWithTime,
+          flightInfo,
+          t(order.display_destination),
+          tripTime,
+          order.display_date,
+          displayTime(order.display_time),
+          TranslateStatus(order.status),
+          order.adult_num,
+          order.child_num,
+          order.totalTickets,
+          order.payment_status,
+          order.totalprice
+        ];
+      });
       return { headers, data: data2 };
     };
     const generatePDF = async () => {
@@ -90,16 +98,15 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       doc.addFileToVFS("SourceHanSans-Normal.ttf", fontBase64);
       doc.addFont("SourceHanSans-Normal.ttf", "SourceHanSans-Normal", "normal");
       doc.setFont("SourceHanSans-Normal");
+      doc.setFontSize(12);
       doc.text(`訂單詳情（${FileNameDate})`, 14, 10);
       const { headers, data: data2 } = getExportData();
       autoTable(doc, {
         head: [headers],
         body: data2,
-        startY: 20,
-        // 表格起始位置
-        styles: { fontSize: 10, font: "SourceHanSans-Normal" },
-        // 使用指定字体
-        headStyles: { font: "SourceHanSans-Normal", fontStyle: "normal", fillColor: [22, 160, 133] },
+        startY: 16,
+        styles: { fontSize: 6, font: "SourceHanSans-Normal" },
+        headStyles: { font: "SourceHanSans-Normal", fontStyle: "normal", fillColor: [76, 141, 174], fontSize: 8, textColor: [0, 0, 0] },
         alternateRowStyles: { fillColor: [240, 240, 240] }
       });
       const filename = `訂單詳情_${FileNameDate}.pdf`;
@@ -219,8 +226,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               trip_type: booking.trip_type,
               display_departure: booking.departure_loc,
               display_destination: booking.destination_loc,
+              return_departure: booking.return_departure,
+              return_destination: booking.return_destination,
               display_date: formatDate(booking.shuttle_date),
-              display_time: booking.shuttle_time,
+              display_time: formatTime(booking.shuttle_time),
+              return_shuttle_date: formatDate(booking.return_shuttle_date),
+              return_shuttle_time: formatTime(booking.return_shuttle_time),
               contact: booking.contact_name,
               totalTickets: booking.total_tickets,
               totalprice: booking.totalprice,
@@ -231,9 +242,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               phone: booking.contact_phone,
               flight_num: booking.flight_num,
               flight_loc: booking.flight_loc,
-              ferry_time: dayjs(booking.ferry_time, "HH:mm"),
-              flight_time: booking.flight_time,
-              arrivalpoint_time: booking.arrivalpoint_time
+              ferry_time: formatTime(booking.ferry_time),
+              flight_time: formatTime(booking.flight_time),
+              arrivalpoint_time: formatTime(booking.arrivalpoint_time),
+              template_arrivalTime: formatTime(booking.return_arrival_time)
             };
             orders2.push(goOrder);
             if (booking.departure_loc === "Booking.airport") {
@@ -247,10 +259,14 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               segment: "return",
               id: booking.id,
               trip_type: booking.trip_type,
+              departure_loc: booking.departure_loc,
+              destination_loc: booking.destination_loc,
               display_departure: booking.return_departure,
               display_destination: booking.return_destination,
               display_date: formatDate(booking.return_shuttle_date),
-              display_time: booking.return_shuttle_time,
+              display_time: formatTime(booking.return_shuttle_time),
+              shuttle_date: formatDate(booking.shuttle_date),
+              shuttle_time: formatTime(booking.shuttle_time),
               contact: booking.contact_name,
               totalTickets: booking.total_tickets,
               totalprice: booking.totalprice,
@@ -261,9 +277,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               phone: booking.contact_phone,
               flight_num: booking.flight_num,
               flight_loc: booking.flight_loc,
-              ferry_time: dayjs(booking.ferry_time, "HH:mm"),
-              flight_time: booking.flight_time,
-              arrivalpoint_time: booking.return_arrival_time
+              ferry_time: formatTime(booking.ferry_time),
+              flight_time: formatTime(booking.flight_time),
+              template_arrivalTime: formatTime(booking.arrivalpoint_time),
+              arrivalpoint_time: formatTime(booking.return_arrival_time)
             };
             orders2.push(returnOrder);
             if (booking.return_departure === "Booking.airport") {
@@ -337,7 +354,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       totalprice: 0,
       flight_num: "",
       flight_loc: "",
-      arrival_time: "",
+      arrivalpoint_time: "",
       flightOrferry_time: ""
     });
     watch(() => newOrder.departure_loc, (newVal) => {
@@ -408,8 +425,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             if (_push2) {
               _push2(ssrRenderComponent(_component_a_time_picker, {
                 type: "time",
-                value: unref(newOrder).arrival_time,
-                "onUpdate:value": ($event) => unref(newOrder).arrival_time = $event,
+                value: unref(newOrder).arrivalpoint_time,
+                "onUpdate:value": ($event) => unref(newOrder).arrivalpoint_time = $event,
                 class: "w-full",
                 inputReadOnly: true,
                 format: "HH:mm"
@@ -418,8 +435,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               return [
                 createVNode(_component_a_time_picker, {
                   type: "time",
-                  value: unref(newOrder).arrival_time,
-                  "onUpdate:value": ($event) => unref(newOrder).arrival_time = $event,
+                  value: unref(newOrder).arrivalpoint_time,
+                  "onUpdate:value": ($event) => unref(newOrder).arrivalpoint_time = $event,
                   class: "w-full",
                   inputReadOnly: true,
                   format: "HH:mm"
@@ -431,7 +448,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }, _parent));
         _push(`</td>`);
         if (sortBy.value === "Booking.airport") {
-          _push(`<td class="border-b py-4 px-8 text-sm md:text-lg"><input${ssrRenderAttr("value", unref(newOrder).flight_num)} class="border rounded p-1 text-sm"><select class="border rounded p-1 text-sm mt-2"><option value="TSA"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "TSA") : ssrLooseEqual(unref(newOrder).flight_loc, "TSA")) ? " selected" : ""}>松山 (TSA)</option><option value="RMQ"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "RMQ") : ssrLooseEqual(unref(newOrder).flight_loc, "RMQ")) ? " selected" : ""}>台中 (RMQ)</option><option value="CYI"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "CYI") : ssrLooseEqual(unref(newOrder).flight_loc, "CYI")) ? " selected" : ""}>嘉義 (CYI)</option><option value="TNN"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "TNN") : ssrLooseEqual(unref(newOrder).flight_loc, "TNN")) ? " selected" : ""}>台南 (TNN)</option><option value="MZG"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "MZG") : ssrLooseEqual(unref(newOrder).flight_loc, "MZG")) ? " selected" : ""}>澎湖 (MZG)</option></select></td>`);
+          _push(`<td class="border-b py-4 px-8 text-sm md:text-lg"><input${ssrRenderAttr("value", unref(newOrder).flight_num)} class="border rounded p-1 text-sm"><select class="border rounded p-1 text-sm mt-2"><option value="松山 (TSA)"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "松山 (TSA)") : ssrLooseEqual(unref(newOrder).flight_loc, "松山 (TSA)")) ? " selected" : ""}>松山 (TSA)</option><option value="台中 (RMQ)"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "台中 (RMQ)") : ssrLooseEqual(unref(newOrder).flight_loc, "台中 (RMQ)")) ? " selected" : ""}>台中 (RMQ)</option><option value="嘉義 (CYI)"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "嘉義 (CYI)") : ssrLooseEqual(unref(newOrder).flight_loc, "嘉義 (CYI)")) ? " selected" : ""}>嘉義 (CYI)</option><option value="台南 (TNN)"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "台南 (TNN)") : ssrLooseEqual(unref(newOrder).flight_loc, "台南 (TNN)")) ? " selected" : ""}>台南 (TNN)</option><option value="澎湖 (MZG)"${ssrIncludeBooleanAttr(Array.isArray(unref(newOrder).flight_loc) ? ssrLooseContain(unref(newOrder).flight_loc, "澎湖 (MZG)") : ssrLooseEqual(unref(newOrder).flight_loc, "澎湖 (MZG)")) ? " selected" : ""}>澎湖 (MZG)</option></select></td>`);
         } else {
           _push(`<!---->`);
         }
@@ -542,16 +559,16 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<!--[-->${ssrInterpolate(order.phone)}<!--]-->`);
         }
-        _push(`</td><td class="border-b py-4 px-8 text-sm md:text-lg">`);
+        _push(`</td><td class="border-b py-4 text-sm md:text-lg">`);
         if (isEditing.value) {
-          _push(`<span><select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.pier") : ssrLooseEqual(order.departure_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.departure_loc) ? ssrLooseContain(order.departure_loc, "Booking.airport") : ssrLooseEqual(order.departure_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+          _push(`<span><select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.display_departure) ? ssrLooseContain(order.display_departure, "Booking.pier") : ssrLooseEqual(order.display_departure, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.display_departure) ? ssrLooseContain(order.display_departure, "Booking.airport") : ssrLooseEqual(order.display_departure, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
           _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
               if (_push2) {
                 _push2(ssrRenderComponent(_component_a_time_picker, {
                   type: "time",
-                  value: order.arrival_time,
-                  "onUpdate:value": ($event) => order.arrival_time = $event,
+                  value: order.arrivalpoint_time,
+                  "onUpdate:value": ($event) => order.arrivalpoint_time = $event,
                   class: "w-full",
                   inputReadOnly: true,
                   format: "HH:mm"
@@ -560,8 +577,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
                 return [
                   createVNode(_component_a_time_picker, {
                     type: "time",
-                    value: order.arrival_time,
-                    "onUpdate:value": ($event) => order.arrival_time = $event,
+                    value: order.arrivalpoint_time,
+                    "onUpdate:value": ($event) => order.arrivalpoint_time = $event,
                     class: "w-full",
                     inputReadOnly: true,
                     format: "HH:mm"
@@ -573,13 +590,13 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           }, _parent));
           _push(`</span>`);
         } else {
-          _push(`<span><p>${ssrInterpolate(unref(t)(order.display_departure))}</p><p>(${ssrInterpolate(order.arrivalpoint_time)})</p></span>`);
+          _push(`<span><p>${ssrInterpolate(unref(t)(order.display_departure))}</p><p>(${ssrInterpolate(("displayTime" in _ctx ? _ctx.displayTime : unref(displayTime))(order.arrivalpoint_time))})</p></span>`);
         }
         _push(`</td>`);
         if (sortBy.value === "Booking.airport") {
           _push(`<td class="border-b py-4 px-8 text-sm md:text-lg">`);
           if (isEditing.value) {
-            _push(`<span><input${ssrRenderAttr("value", order.flight_loc)} class="border rounded p-1 text-sm"><input${ssrRenderAttr("value", order.flight_num)} class="border rounded p-1 text-sm"></span>`);
+            _push(`<span><select class="border rounded p-1 text-sm mt-2"><option value="松山 (TSA)"${ssrIncludeBooleanAttr(Array.isArray(order.flight_loc) ? ssrLooseContain(order.flight_loc, "松山 (TSA)") : ssrLooseEqual(order.flight_loc, "松山 (TSA)")) ? " selected" : ""}>松山 (TSA)</option><option value="台中 (RMQ)"${ssrIncludeBooleanAttr(Array.isArray(order.flight_loc) ? ssrLooseContain(order.flight_loc, "台中 (RMQ)") : ssrLooseEqual(order.flight_loc, "台中 (RMQ)")) ? " selected" : ""}>台中 (RMQ)</option><option value="嘉義 (CYI)"${ssrIncludeBooleanAttr(Array.isArray(order.flight_loc) ? ssrLooseContain(order.flight_loc, "嘉義 (CYI)") : ssrLooseEqual(order.flight_loc, "嘉義 (CYI)")) ? " selected" : ""}>嘉義 (CYI)</option><option value="台南 (TNN)"${ssrIncludeBooleanAttr(Array.isArray(order.flight_loc) ? ssrLooseContain(order.flight_loc, "台南 (TNN)") : ssrLooseEqual(order.flight_loc, "台南 (TNN)")) ? " selected" : ""}>台南 (TNN)</option><option value="澎湖 (MZG)"${ssrIncludeBooleanAttr(Array.isArray(order.flight_loc) ? ssrLooseContain(order.flight_loc, "澎湖 (MZG)") : ssrLooseEqual(order.flight_loc, "澎湖 (MZG)")) ? " selected" : ""}>澎湖 (MZG)</option></select><input${ssrRenderAttr("value", order.flight_num)} class="border rounded p-1 text-sm"></span>`);
           } else {
             _push(`<span><p>${ssrInterpolate(order.flight_loc)}</p><p>${ssrInterpolate(order.flight_num)}</p></span>`);
           }
@@ -589,17 +606,41 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }
         _push(`<td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
-          _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.pier") : ssrLooseEqual(order.destination_loc, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.destination_loc) ? ssrLooseContain(order.destination_loc, "Booking.airport") : ssrLooseEqual(order.destination_loc, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
+          _push(`<select class="border rounded p-1 text-sm"><option value="Booking.pier"${ssrIncludeBooleanAttr(Array.isArray(order.display_destination) ? ssrLooseContain(order.display_destination, "Booking.pier") : ssrLooseEqual(order.display_destination, "Booking.pier")) ? " selected" : ""}>水頭碼頭</option><option value="Booking.airport"${ssrIncludeBooleanAttr(Array.isArray(order.display_destination) ? ssrLooseContain(order.display_destination, "Booking.airport") : ssrLooseEqual(order.display_destination, "Booking.airport")) ? " selected" : ""}>尚義機場</option></select>`);
         } else {
           _push(`<span>${ssrInterpolate(unref(t)(order.display_destination))}</span>`);
         }
-        _push(`</td><td class="border-b py-4 px-8 whitespace-nowrap text-sm md:text-lg">`);
-        if (isEditing.value) {
+        _push(`</td><td class="border-b py-4 px-4 whitespace-nowrap text-sm md:text-lg">`);
+        if (isEditing.value && sortBy.value === "Booking.pier") {
           _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
               if (_push2) {
                 _push2(ssrRenderComponent(_component_a_time_picker, {
-                  type: "time",
+                  value: order.flight_time,
+                  "onUpdate:value": ($event) => order.flight_time = $event,
+                  class: "w-full",
+                  inputReadOnly: true,
+                  format: "HH:mm"
+                }, null, _parent2, _scopeId));
+              } else {
+                return [
+                  createVNode(_component_a_time_picker, {
+                    value: order.flight_time,
+                    "onUpdate:value": ($event) => order.flight_time = $event,
+                    class: "w-full",
+                    inputReadOnly: true,
+                    format: "HH:mm"
+                  }, null, 8, ["value", "onUpdate:value"])
+                ];
+              }
+            }),
+            _: 2
+          }, _parent));
+        } else if (isEditing.value && sortBy.value === "Booking.airport") {
+          _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
+            default: withCtx((_, _push2, _parent2, _scopeId) => {
+              if (_push2) {
+                _push2(ssrRenderComponent(_component_a_time_picker, {
                   value: order.ferry_time,
                   "onUpdate:value": ($event) => order.ferry_time = $event,
                   class: "w-full",
@@ -609,7 +650,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               } else {
                 return [
                   createVNode(_component_a_time_picker, {
-                    type: "time",
                     value: order.ferry_time,
                     "onUpdate:value": ($event) => order.ferry_time = $event,
                     class: "w-full",
@@ -622,7 +662,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             _: 2
           }, _parent));
         } else {
-          _push(`<!--[-->${ssrInterpolate(sortBy.value === "Booking.airport" ? order.ferry_time : order.flight_time)}<!--]-->`);
+          _push(`<!--[-->${ssrInterpolate(sortBy.value === "Booking.airport" ? ("displayTime" in _ctx ? _ctx.displayTime : unref(displayTime))(order.ferry_time) : ("displayTime" in _ctx ? _ctx.displayTime : unref(displayTime))(order.flight_time))}<!--]-->`);
         }
         _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
@@ -631,16 +671,18 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             default: withCtx((_, _push2, _parent2, _scopeId) => {
               if (_push2) {
                 _push2(ssrRenderComponent(_component_a_date_picker, {
-                  value: order.shuttle_date,
-                  "onUpdate:value": ($event) => order.shuttle_date = $event,
+                  value: order.display_date,
+                  "onUpdate:value": ($event) => order.display_date = $event,
+                  class: "w-32",
                   inputReadOnly: true,
                   valueFormat: "YYYY-MM-DD"
                 }, null, _parent2, _scopeId));
               } else {
                 return [
                   createVNode(_component_a_date_picker, {
-                    value: order.shuttle_date,
-                    "onUpdate:value": ($event) => order.shuttle_date = $event,
+                    value: order.display_date,
+                    "onUpdate:value": ($event) => order.display_date = $event,
+                    class: "w-32",
                     inputReadOnly: true,
                     valueFormat: "YYYY-MM-DD"
                   }, null, 8, ["value", "onUpdate:value"])
@@ -655,20 +697,23 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }
         _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {
+          _push(`<span>`);
           _push(ssrRenderComponent(_component_a_config_provider, { locale: unref(localeValues) }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
               if (_push2) {
                 _push2(ssrRenderComponent(_component_a_time_picker, {
-                  value: order.shuttle_time,
-                  "onUpdate:value": ($event) => order.shuttle_time = $event,
+                  value: order.display_time,
+                  "onUpdate:value": ($event) => order.display_time = $event,
+                  class: "w-24",
                   inputReadOnly: true,
                   format: "HH:mm"
                 }, null, _parent2, _scopeId));
               } else {
                 return [
                   createVNode(_component_a_time_picker, {
-                    value: order.shuttle_time,
-                    "onUpdate:value": ($event) => order.shuttle_time = $event,
+                    value: order.display_time,
+                    "onUpdate:value": ($event) => order.display_time = $event,
+                    class: "w-24",
                     inputReadOnly: true,
                     format: "HH:mm"
                   }, null, 8, ["value", "onUpdate:value"])
@@ -677,8 +722,9 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             }),
             _: 2
           }, _parent));
+          _push(`</span>`);
         } else {
-          _push(`<span>${ssrInterpolate(order.display_time)}</span>`);
+          _push(`<span>${ssrInterpolate(("displayTime" in _ctx ? _ctx.displayTime : unref(displayTime))(order.display_time))}</span>`);
         }
         _push(`</td><td class="border-b py-4 px-6 whitespace-nowrap text-sm md:text-lg">`);
         if (isEditing.value) {

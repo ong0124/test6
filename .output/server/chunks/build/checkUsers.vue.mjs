@@ -1,6 +1,6 @@
 import __nuxt_component_3 from './index2.mjs';
 import { _ as _sfc_main$3 } from './PopMenu.vue.mjs';
-import { f as formatDate } from './formatDate.mjs';
+import { a as formatDate } from './formatDate.mjs';
 import { defineComponent, reactive, watch, mergeProps, unref, withCtx, createVNode, ref, computed, nextTick, useSSRContext } from 'vue';
 import { ssrRenderAttrs, ssrInterpolate, ssrRenderAttr, ssrRenderComponent, ssrRenderList } from 'vue/server-renderer';
 import { d as dayjs, _ as _sfc_main$2, a as _sfc_main$4 } from '../_/index.mjs';
@@ -18,7 +18,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'pinia';
 import 'vue-router';

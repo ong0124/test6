@@ -84,8 +84,9 @@ export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel,
       shuttle_time,
       return_shuttle_date,
       return_shuttle_time,
-      status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      status,
+      flight_loc
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   values: [ data.trip_type,
     data.LineID,
@@ -109,7 +110,8 @@ export const create = async(data: Pick<BookingModel, Exclude<keyof BookingModel,
     data.shuttle_time,
     data.return_shuttle_date,
     data.return_shuttle_time,
-    data.status]
+    data.status,
+    data.flight_loc]
     })
     ) as any;
     console.log('Inserted result:', result);
@@ -153,7 +155,8 @@ export const update = async (
     'adult_num' | 'child_num' | 'contact_phone' | 'totalprice' |
     'contact_name' | 'departure_loc' | 'destination_loc' |
     'shuttle_date' | 'shuttle_time' | 'status'| 'return_departure'|
-    'return_destination'|'return_shuttle_date'|'return_shuttle_time'
+    'return_destination'|'return_shuttle_date'|'return_shuttle_time'|'ferry_time'|
+    'flight_time'|'arrivalpoint_time'|'flight_num'|'flight_loc'
   > & {
     payment_status: string
   }
@@ -176,7 +179,12 @@ export const update = async (
         shuttle_time = ?,
         return_shuttle_date = ?,
         return_shuttle_time = ?,
-        status = ?
+        status = ?,
+        ferry_time = ?,
+        flight_time = ?,
+        arrivalpoint_time = ?,
+        flight_num = ?,
+        flight_loc = ?
       WHERE id = ?
     `,
     values: [
@@ -194,6 +202,11 @@ export const update = async (
       data.return_shuttle_date,
       data.return_shuttle_time,
       data.status,
+      data.ferry_time,
+      data.flight_time,
+      data.arrivalpoint_time,
+      data.flight_num,
+      data.flight_loc,
       id
     ]
   });

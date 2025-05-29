@@ -1,5 +1,5 @@
 import __nuxt_component_3 from './index2.mjs';
-import { f as formatDate } from './formatDate.mjs';
+import { a as formatDate } from './formatDate.mjs';
 import { defineComponent, ref, unref, useSSRContext } from 'vue';
 import { ssrRenderComponent, ssrRenderClass, ssrRenderList, ssrInterpolate } from 'vue/server-renderer';
 import { e as useI18n } from './server.mjs';
@@ -19,7 +19,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'unhead/server';
 import 'unhead/utils';

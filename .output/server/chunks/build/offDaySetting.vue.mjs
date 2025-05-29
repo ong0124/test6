@@ -1,5 +1,5 @@
 import __nuxt_component_3 from './index2.mjs';
-import { f as formatDate } from './formatDate.mjs';
+import { a as formatDate } from './formatDate.mjs';
 import { defineComponent, ref, unref, withCtx, createVNode, useSSRContext } from 'vue';
 import { ssrRenderAttrs, ssrRenderComponent, ssrRenderList, ssrInterpolate } from 'vue/server-renderer';
 import { C as ConfigProvider, l as localeValues, D as DatePicker$1 } from './dayjs.mjs';
@@ -17,7 +17,6 @@ import 'node:url';
 import '@iconify/utils';
 import 'node:crypto';
 import 'consola';
-import 'node:module';
 import 'node:path';
 import 'pinia';
 import 'vue-router';

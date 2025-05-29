@@ -68,6 +68,7 @@ export const create = async (evt: H3Event)=>{
             return_shuttle_time: body.return_shuttle_time,
             status:body.status,
             payment_status:body.payment_status,
+            flight_loc :body.flight_loc,
         });
         if (!result || !result.id) {
             throw createError({ statusCode: 500, statusMessage: 'Failed to create booking, no ID returned' });
@@ -154,7 +155,6 @@ export const remove = async (evt: H3Event) => {
   }
   };
 
-
 export const update = async (evt: H3Event) => {
   try {
     const id = evt.context.params?.id;
@@ -188,7 +188,12 @@ export const update = async (evt: H3Event) => {
       return_departure:body.return_departure,
       return_destination:body.return_destination,
       return_shuttle_date:body.return_shuttle_date,
-      return_shuttle_time:body.return_shuttle_time 
+      return_shuttle_time:body.return_shuttle_time,
+      ferry_time: body.ferry_time,
+      flight_time: body.flight_time,
+      flight_num: body.flight_num,
+      flight_loc:body.flight_loc, 
+      arrivalpoint_time:body.arrivalpoint_time
     });
 
     return {
